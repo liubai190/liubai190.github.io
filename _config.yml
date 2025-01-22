@@ -3,25 +3,3 @@ description: 心似已灰之木，身如不系之舟
 github_username: liubai190
 # Email and twitter are optional:
 email:buyirat@qq.com
-
-# Everything below here can be ignored, unless you want to change the theme entirely
-theme: minima
-plugins:
-  - jekyll-feed
-  - jekyll-gist
-  - jekyll-octicons
-  - jekyll-github-metadata
-
-titles_from_headings:
-  enabled:     true
-  strip_title: true
-  collections: true
-
-highlighter: rouge
-markdown: kramdown
-kramdown:
-  math_engine: katex
-  input: GFM
-  auto_ids: true
-  hard_wrap: false
-  syntax_highlighter: rouge
