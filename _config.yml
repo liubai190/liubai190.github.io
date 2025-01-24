@@ -1,4 +1,13 @@
 deploy:
   type: git
-  repository: https://{liubai190}:{1908425715lc}@github.com/{liubai190}/{liubai190}.github.io.git
+  repo: 
+    github: git@github.com:liubai190/liubai190.github.io.git
+    # github: https://github.com/liubai190/liubai190.github.io.git
   branch: master
+
+# backup
+backup:
+  type: git
+  message: backup my blog of https://liubai190.github.io/
+  repository:
+    github: https://github.com/liubai190/liubai190.github.io.git,backup
