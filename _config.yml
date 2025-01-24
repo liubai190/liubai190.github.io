@@ -1,4 +1,4 @@
-title: 灰木
-description: 心似已灰之木，身如不系之舟
-github_username: liubai190
-email: buyirat@qq.com # Email is optional
+deploy:
+  type: git
+  repository: git@github.com:liubai190/liubai190 .github.io.git
+  branch: master
