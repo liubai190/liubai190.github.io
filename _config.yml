@@ -1,13 +1,8 @@
-deploy:
-  type: git
-  repo: 
-    github: git@github.com:liubai190/liubai190.github.io.git
-    # github: https://github.com/liubai190/liubai190.github.io.git
-  branch: master
-
-# backup
-backup:
-  type: git
-  message: backup my blog of https://liubai190.github.io/
-  repository:
-    github: https://github.com/liubai190/liubai190.github.io.git,backup
+title: 灰木
+description: >-
+  这是一个船🚢新的 start
+theme: minima
+markdown: kramdown
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
