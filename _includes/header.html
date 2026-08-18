@@ -3,7 +3,25 @@
   <div class="wrapper">
     {%- assign default_paths = site.pages | map: "path" -%}
     {%- assign page_paths = site.header_pages | default: default_paths -%}
-    <a class="site-title" rel="author" href="{{ "/" | relative_url }}">{{ site.title | escape }}</a>
+    <a class="site-title" rel="author" href="{{ "/" | relative_url }}" title="┬─┬ノ( º _ ºノ)"> {{ site.title | escape }}</a>
+    <script>
+      (function () {
+        var baseTitle = document.title;
+        var kaomojiOn = ' (╯°□°）╯︵ ┻━┻';
+        var kaomojiOff = ' ┬─┬ノ( º _ ºノ)';
+        var t = document.querySelector('.site-title');
+        if (t) {
+          t.addEventListener('mouseenter', function () {
+            document.title = baseTitle + kaomojiOn;
+            t.setAttribute('title', '(╯°□°）╯︵ ┻━┻');
+          });
+          t.addEventListener('mouseleave', function () {
+            document.title = baseTitle;
+            t.setAttribute('title', '┬─┬ノ( º _ ºノ)');
+          });
+        }
+      })();
+    </script>
 
     {%- if page_paths -%}
       <nav class="site-nav">
