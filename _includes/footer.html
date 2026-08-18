@@ -1,0 +1,43 @@
+<footer class="site-footer h-card">
+  <data class="u-url" href="{{ "/" | relative_url }}"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">{{ site.title | escape }}</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">{{ site.title | escape }}</li>
+          {%- if site.email -%}
+          <li><a class="u-email" href="mailto:{{ site.email }}">{{ site.email }}</a></li>
+          {%- endif -%}
+        </ul>
+      </div>
+
+      <div class="footer-col footer-col-2">
+        {%- include social.html -%}
+      </div>
+
+      <div class="footer-col footer-col-3">
+        <p>{{- site.description | escape -}}</p>
+      </div>
+    </div>
+
+    <div class="site-copyright">
+      © 2025-<span id="cur-year">2026</span> 灰木 · 已运行 <span id="run-days">…</span> 天
+    </div>
+
+  </div>
+
+  <script>
+    (function () {
+      var start = new Date(2025, 0, 22); /* 建站日 2025-01-22 */
+      var days = Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000));
+      var el = document.getElementById('run-days');
+      if (el) { el.textContent = days; }
+      var y = document.getElementById('cur-year');
+      if (y) { y.textContent = new Date().getFullYear(); }
+    })();
+  </script>
+</footer>
