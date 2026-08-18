@@ -3,7 +3,7 @@
   <div class="wrapper">
     {%- assign default_paths = site.pages | map: "path" -%}
     {%- assign page_paths = site.header_pages | default: default_paths -%}
-    <a class="site-title" rel="author" href="{{ "/" | relative_url }}">{{ site.title | escape }}<span class="kao" title="鼠标移开，桌子又摆好了"><span class="kao-a">┬─┬ノ( º _ ºノ)</span><span class="kao-b">(╯°□°）╯︵ ┻━┻</span></span></a>
+    <a class="site-title" rel="author" href="{{ "/" | relative_url }}">{{ site.title | escape }}</a>
 
     {%- if page_paths -%}
       <nav class="site-nav">
