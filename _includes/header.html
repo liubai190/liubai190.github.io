@@ -6,18 +6,23 @@
     <a class="site-title" rel="author" href="{{ "/" | relative_url }}" title="┬─┬ノ( º _ ºノ)"> {{ site.title | escape }}</a>
     <script>
       (function () {
-        var baseTitle = document.title;
-        var kaomojiOn = ' (╯°□°）╯︵ ┻━┻';
-        var kaomojiOff = ' ┬─┬ノ( º _ ºノ)';
+        var OFF = '┬─┬ノ( º _ ºノ)';
+        var ON = '(╯°□°）╯︵ ┻━┻';
+        var desc = '这是一个船🚢新的 start';
+        var raw = document.title;
+        var baseTitle = raw.indexOf(desc) >= 0
+          ? raw.replace(desc, OFF)
+          : raw + ' ' + OFF;
+        document.title = baseTitle;
         var t = document.querySelector('.site-title');
         if (t) {
           t.addEventListener('mouseenter', function () {
-            document.title = baseTitle + kaomojiOn;
-            t.setAttribute('title', '(╯°□°）╯︵ ┻━┻');
+            document.title = baseTitle.replace(OFF, ON);
+            t.setAttribute('title', ON);
           });
           t.addEventListener('mouseleave', function () {
             document.title = baseTitle;
-            t.setAttribute('title', '┬─┬ノ( º _ ºノ)');
+            t.setAttribute('title', OFF);
           });
         }
       })();
