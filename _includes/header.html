@@ -3,7 +3,7 @@
   <div class="wrapper">
     {%- assign default_paths = site.pages | map: "path" -%}
     {%- assign page_paths = site.header_pages | default: default_paths -%}
-    <a class="site-title" rel="author" href="{{ "/" | relative_url }}" title="┬─┬ノ( º _ ºノ)"> {{ site.title | escape }}</a>
+    <a class="site-title" rel="author" href="{{ "/" | relative_url }}"> {{ site.title | escape }}</a>
     <script>
       (function () {
         var OFF = '┬─┬ノ( º _ ºノ)';
@@ -13,18 +13,15 @@
         var baseTitle = raw.indexOf(desc) >= 0
           ? raw.replace(desc, OFF)
           : raw + ' ' + OFF;
-        document.title = baseTitle;
-        var t = document.querySelector('.site-title');
-        if (t) {
-          t.addEventListener('mouseenter', function () {
-            document.title = baseTitle.replace(OFF, ON);
-            t.setAttribute('title', ON);
-          });
-          t.addEventListener('mouseleave', function () {
-            document.title = baseTitle;
-            t.setAttribute('title', OFF);
-          });
+        function show(on) {
+          document.title = on ? baseTitle.replace(OFF, ON) : baseTitle;
         }
+        document.addEventListener('visibilitychange', function () {
+          show(document.visibilityState === 'visible');
+        });
+        window.addEventListener('focus', function () { show(true); });
+        window.addEventListener('blur', function () { show(false); });
+        show(document.visibilityState === 'visible');
       })();
     </script>
 
