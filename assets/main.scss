@@ -128,3 +128,28 @@
     }
   }
 }
+
+/* ===== 标题颜文字悬停效果 ===== */
+
+.kao {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1;
+  vertical-align: middle;
+  white-space: nowrap;
+  cursor: default;
+
+  .kao-b {
+    display: none;
+  }
+
+  &:hover .kao-a {
+    display: none;
+  }
+
+  &:hover .kao-b {
+    display: inline;
+  }
+}
