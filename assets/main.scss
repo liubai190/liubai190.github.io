@@ -227,3 +227,63 @@
   text-align: center;
   letter-spacing: 0.02em;
 }
+
+/* ===== 折叠块（details）增强 ===== */
+
+/* 新版浏览器支持对 auto 高度做动画，旧浏览器自动忽略 */
+:root {
+  interpolate-size: allow-keywords;
+}
+
+details.post-fold {
+  margin: 1.2em 0;
+
+  summary {
+    list-style: none;
+    cursor: pointer;
+    color: #444;
+    transition: color 0.2s ease;
+
+    /* 干掉浏览器默认三角 */
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::marker {
+      content: "";
+    }
+
+    /* 自定义符号：展开时旋转 90° */
+    &::before {
+      content: "▸";
+      display: inline-block;
+      margin-right: 0.5em;
+      font-size: 0.85em;
+      transition: transform 0.25s ease;
+    }
+
+    &:hover {
+      color: #9a9a9a;
+    }
+  }
+
+  &[open] summary {
+    &::before {
+      transform: rotate(90deg);
+    }
+  }
+
+  /* 平滑展开动画（Chrome 131+，其他浏览器无动画但功能正常） */
+  &::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition:
+      block-size 0.35s ease,
+      content-visibility 0.35s ease;
+    transition-behavior: allow-discrete;
+  }
+
+  &[open]::details-content {
+    block-size: auto;
+  }
+}

@@ -4,6 +4,8 @@ description: >-
   这是一个船🚢新的 start
 theme: minima
 markdown: kramdown
+kramdown:
+  parse_block_html: true
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
