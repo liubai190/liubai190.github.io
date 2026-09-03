@@ -7,10 +7,8 @@ category: 星辰大海
 
 超自然武装当哒当，又名胆大党。整体观感：一场接一场的打斗，一轮又一轮的伏笔，中间穿插一个接一个的梗条，完全停不下来。
 
-憋了半天，就憋出个
-
 <details class="post-fold">
-<summary>无聊的剧情简介……</summary>
+<summary>憋了半天，就憋出个<span class="fold-tag">无聊的剧情简介</span>。</summary>
 
 头一回写影评，完全不知道咋写，零碎的知识点里加点儿剧情吧~ ~
 

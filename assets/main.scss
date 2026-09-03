@@ -241,7 +241,7 @@ details.post-fold {
   summary {
     list-style: none;
     cursor: pointer;
-    color: #444;
+    color: inherit;
     transition: color 0.2s ease;
 
     /* 干掉浏览器默认三角 */
@@ -253,23 +253,28 @@ details.post-fold {
       content: "";
     }
 
-    /* 自定义符号：展开时旋转 90° */
-    &::before {
-      content: "▸";
-      display: inline-block;
-      margin-right: 0.5em;
-      font-size: 0.85em;
-      transition: transform 0.25s ease;
+    /* 「无聊的剧情简介」标签：虚线下划线，展开后变实线 */
+    .fold-tag {
+      border-bottom: 1px dashed #b5b5b5;
+      padding-bottom: 2px;
+      transition: border-color 0.2s ease, color 0.2s ease;
     }
 
     &:hover {
       color: #9a9a9a;
+
+      .fold-tag {
+        border-bottom-color: #9a9a9a;
+      }
     }
   }
 
   &[open] summary {
-    &::before {
-      transform: rotate(90deg);
+    color: #9a9a9a;
+
+    .fold-tag {
+      border-bottom-style: solid;
+      border-bottom-color: #b5b5b5;
     }
   }
 
