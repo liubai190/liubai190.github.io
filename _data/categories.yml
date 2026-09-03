@@ -1,15 +1,11 @@
-- name: 正在整
-  slug: doing
-  note: 闲着也是闲着;)
+- name: 星辰大海
+  slug: stars
 
-- name: 还要整
-  slug: todo
-  note: SHUT UP & TAKE MY…
+- name: 奇思妙想
+  slug: ideas
 
-- name: 整完了
-  slug: done
-  note: 我真是个精灵娃儿( •̀ .̫ •́ )✧
+- name: 十年一日
+  slug: daily
 
-- name: 不整了
-  slug: no-more
-  note: 万事开头难然后中间难……
+- name: 其他
+  slug: others
