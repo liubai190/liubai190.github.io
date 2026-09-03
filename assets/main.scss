@@ -24,6 +24,11 @@
   margin-right: auto;
   padding-left: 0;
   padding-right: 0;
+
+  /* primer.css 的 clearfix 伪元素会变成隐形第三项，把导航顶离右边缘 */
+  &::after {
+    display: none;
+  }
 }
 
 .header-brand {
