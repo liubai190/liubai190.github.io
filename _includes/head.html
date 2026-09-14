@@ -4,9 +4,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="icon" type="image/x-icon" href="{{ "/images/favicon.ico" | relative_url }}">
   <link rel="icon" type="image/png" href="{{ "/images/favicon.png" | relative_url }}">
+  <link rel="preconnect" href="https://fontsapi.zeoseven.com" crossorigin>
   {%- seo -%}
   <link href="https://unpkg.com/@primer/css/dist/primer.css" rel="stylesheet" />
   <link rel="stylesheet" href="{{ "/assets/main.css" | relative_url }}">
+  <!-- 正文宋体：屏显臻宋 Clear Han Serif（ZeoSeven 分片 CDN，仅文章正文使用） -->
+  <link rel="stylesheet" href="https://fontsapi.zeoseven.com/79/main/result.css">
   {%- feed_meta -%}
   {%- if jekyll.environment == 'production' and site.google_analytics -%}
     {%- include google-analytics.html -%}

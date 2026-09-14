@@ -301,3 +301,20 @@ details.post-fold {
   margin: 0.4em 0 1.6em;
   display: block;
 }
+
+/* ===== 文章正文：屏显臻宋（Clear Han Serif，仅 .post-content）===== */
+/* 字体由 ZeoSeven 分片 CDN 提供，link 在 _includes/head.html；
+   只在文章正文生效，页头 / 导航 / 文章标题 / 日期 / 首页列表 都不受影响 */
+
+.post-content {
+  font-family: "Clear Han Serif", "Songti SC", "STSong", "SimSun",
+    "Noto Serif CJK SC", "Source Han Serif SC", serif;
+}
+
+/* 代码块、行内代码保持等宽，不跟着变宋体 */
+.post-content code,
+.post-content pre {
+  font-family: "Menlo", "Inconsolata", "Consolas", "Roboto Mono",
+    "Ubuntu Mono", "Liberation Mono", "Courier New", monospace;
+}
+
