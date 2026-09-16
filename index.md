@@ -44,10 +44,12 @@ title: 灰木
 
       var n = Math.floor(Math.random() * posts.length) + 1;
       var rollMs = reduce ? 0 : 400;
+      /* 转完停一下再跳，停顿沿用删气泡之前的 375ms */
+      var holdMs = reduce ? 200 : 375;
 
       setTimeout(function () {
         window.location.href = posts[n - 1].u;
-      }, rollMs);
+      }, rollMs + holdMs);
     });
   })();
 </script>
