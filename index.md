@@ -36,6 +36,12 @@ title: 灰木
     var rolling = false;
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    function reset() {
+      rolling = false;
+      btn.classList.remove('is-rolling');
+      btn.removeAttribute('aria-busy');
+    }
+
     btn.addEventListener('click', function () {
       if (rolling || !posts.length) { return; }
       rolling = true;
@@ -48,8 +54,17 @@ title: 灰木
       var holdMs = reduce ? 200 : 375;
 
       setTimeout(function () {
+        /* 跳转前先把状态清干净。浏览器会把这一帧整个冻进往返缓存（bfcache），
+           带 rolling=true 和 is-rolling 类一起冻。不清的话从文章页按后退回来，
+           rolling 仍是 true，骰子点不动；类还在，动画也重放不了 */
+        reset();
         window.location.href = posts[n - 1].u;
       }, rollMs + holdMs);
+    });
+
+    /* 从往返缓存恢复时再兜一次底 */
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted) { reset(); }
     });
   })();
 </script>
