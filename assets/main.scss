@@ -154,8 +154,13 @@
   }
 
   /* 展开时的全屏半透明遮罩：铺满整屏，点它收起（遮罩本身是 label，零 JS）。
-     跟搜索面板一个路数，只是更透一些，让底下的正文若隐若现 */
-  .nav-trigger:checked ~ .nav-scrim {
+     两个要点：
+     1) 底色只给 60% 白 + 8px 毛玻璃 —— 底下的正文要透得出来。
+        （上一版是 93% 白，叠上模糊等于一块白板，看着跟没开遮罩一样）
+     2) 用 clip-path 从上往下揭开。display 是不能过渡的，所以这层要常驻渲染树，
+        靠 opacity + visibility 控制显隐 */
+  .nav-scrim {
+    /* 盖掉桌面那条 display:none —— 不进渲染树就过渡不起来 */
     display: block;
     position: fixed;
     top: 0;
@@ -163,10 +168,31 @@
     bottom: 0;
     left: 0;
     z-index: 90;
-    background: rgba(253, 253, 253, 0.93);
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
+    background: rgba(253, 253, 253, 0.6);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
     -webkit-tap-highlight-color: transparent;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    /* 收起来的状态 = 从上沿被裁光（100% 高度全裁掉） */
+    clip-path: inset(0 0 100% 0);
+    transition:
+      opacity 0.16s ease,
+      clip-path 0.26s cubic-bezier(0.33, 0, 0.2, 1),
+      visibility 0s linear 0.26s;
+  }
+
+  /* 三条线被点中：遮罩往下揭开盖满屏幕 */
+  .nav-trigger:checked ~ .nav-scrim {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    clip-path: inset(0 0 0 0);
+    transition:
+      opacity 0.16s ease,
+      clip-path 0.26s cubic-bezier(0.33, 0, 0.2, 1),
+      visibility 0s;
   }
 
   /* 分类直接铺在这层遮罩上：整屏透明层，没有卡片、边框、投影。
@@ -179,7 +205,7 @@
     bottom: 0;
     left: 0;
     z-index: 95;
-    display: none;
+    display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 0;
@@ -187,15 +213,25 @@
     padding: 108px 25px 40px;
     background: transparent;
     pointer-events: none;
+    /* 收起时整层从渲染与无障碍树里摘掉（否则读屏会念到看不见的分类），
+       但要等链接退完再摘，不然收起动画会被当场截断 */
+    visibility: hidden;
+    transition: visibility 0s linear 0.25s;
 
     .header-link {
-      pointer-events: auto;
       /* 三条线在右边，分类也跟着靠右：右边留 25px = 页头 18px 内边距
          + 图标按钮(34px)里 20px 图标的 7px 留白，右缘跟三条线对上 */
       padding: 15px 0;
       font-size: 19px;
       line-height: 1.4;
       text-align: right;
+      /* 收起态：透明 + 往上躲 12px，等勾选框点亮再依次归位 */
+      opacity: 0;
+      transform: translateY(-12px);
+      pointer-events: none;
+      transition:
+        opacity 0.17s ease,
+        transform 0.21s cubic-bezier(0.33, 0, 0.2, 1);
 
       &:hover {
         color: #282728;
@@ -203,9 +239,37 @@
     }
   }
 
-  /* 三条线被点中，分类就铺开 */
+  /* 三条线被点中：整层先露面（不等待），分类再从上到下依次亮起 */
   .nav-trigger:checked ~ .header-nav {
-    display: flex;
+    visibility: visible;
+    transition: visibility 0s;
+  }
+
+  .nav-trigger:checked ~ .header-nav .header-link {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  /* 每项错开 35ms（5 项走完约 0.37s，偏快但不糊成一团） */
+  .nav-trigger:checked ~ .header-nav .header-link:nth-child(1) {
+    transition-delay: 0.02s;
+  }
+
+  .nav-trigger:checked ~ .header-nav .header-link:nth-child(2) {
+    transition-delay: 0.055s;
+  }
+
+  .nav-trigger:checked ~ .header-nav .header-link:nth-child(3) {
+    transition-delay: 0.09s;
+  }
+
+  .nav-trigger:checked ~ .header-nav .header-link:nth-child(4) {
+    transition-delay: 0.125s;
+  }
+
+  .nav-trigger:checked ~ .header-nav .header-link:nth-child(5) {
+    transition-delay: 0.16s;
   }
 
   /* 站名和两个图标浮在遮罩之上：页头始终看得见，
@@ -723,6 +787,14 @@ details.post-fold {
 @media (prefers-reduced-motion: reduce) {
   .dice-btn.is-rolling .dice-face {
     animation: none;
+  }
+
+  /* 关掉导航的渐次展开与遮罩揭开：直接出现，不做动画 */
+  .nav-scrim,
+  .header-nav,
+  .nav-trigger:checked ~ .header-nav .header-link {
+    transition-delay: 0s !important;
+    transition-duration: 0.01s !important;
   }
 }
 
