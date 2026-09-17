@@ -77,6 +77,11 @@
   user-select: none;
 }
 
+/* 展开分类时的透明遮罩；只在手机端由勾选框点亮，桌面上永远是隐藏的 */
+.nav-scrim {
+  display: none;
+}
+
 .header-brand {
   margin-right: auto;
   min-width: 0;
@@ -148,23 +153,48 @@
     display: inline-flex;
   }
 
+  /* 展开时的全屏半透明遮罩：铺满整屏，点它收起（遮罩本身是 label，零 JS）。
+     跟搜索面板一个路数，只是更透一些，让底下的正文若隐若现 */
+  .nav-trigger:checked ~ .nav-scrim {
+    display: block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 90;
+    background: rgba(253, 253, 253, 0.93);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 分类直接铺在这层遮罩上：整屏透明层，没有卡片、边框、投影。
+     pointer-events:none 让空白处的点击漏到下面的遮罩上（点一下即收起），
+     只有链接本身可点 */
   .header-nav {
-    order: 3;
-    flex-basis: 100%;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 95;
     display: none;
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-end;
     gap: 0;
-    margin-top: 6px;
-    padding-top: 0;
-    border-top: 1px solid #ececec;
+    margin: 0;
+    padding: 108px 25px 40px;
+    background: transparent;
+    pointer-events: none;
 
     .header-link {
-      /* 三条线在右边，展开的分类也跟着靠右；
-         右边留 7px = 图标按钮(34px)里 20px 图标的左右留白，正好跟三条线右缘对齐 */
-      padding: 13px 7px;
-      border-bottom: 1px solid #f2f2f2;
-      font-size: 16px;
+      pointer-events: auto;
+      /* 三条线在右边，分类也跟着靠右：右边留 25px = 页头 18px 内边距
+         + 图标按钮(34px)里 20px 图标的 7px 留白，右缘跟三条线对上 */
+      padding: 15px 0;
+      font-size: 19px;
+      line-height: 1.4;
       text-align: right;
 
       &:hover {
@@ -176,6 +206,21 @@
   /* 三条线被点中，分类就铺开 */
   .nav-trigger:checked ~ .header-nav {
     display: flex;
+  }
+
+  /* 站名和两个图标浮在遮罩之上：页头始终看得见，
+     再点一下三条线（或点空白）就收起 */
+  .header-brand,
+  .header-tools {
+    position: relative;
+    z-index: 92;
+  }
+
+  /* 遮罩铺满整屏时锁住页面滚动，免得底下的正文跟着滑。
+     :has() 老浏览器不认就退化成「能滚但点一下照旧能收」，不影响功能 */
+  html:has(.nav-trigger:checked),
+  body:has(.nav-trigger:checked) {
+    overflow: hidden;
   }
 }
 

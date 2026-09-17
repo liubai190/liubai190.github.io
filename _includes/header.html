@@ -26,6 +26,9 @@
 
     <input type="checkbox" id="nav-trigger" class="nav-trigger" aria-label="展开分类">
 
+    <!-- 透明遮罩：展开时铺满屏幕，点一下收起（同样是个 label，零 JS） -->
+    <label class="nav-scrim" for="nav-trigger" aria-hidden="true"></label>
+
     <nav class="header-nav" id="header-nav" aria-label="分类导航">
       {%- for cat in site.data.categories -%}
       <a class="header-link" href="{{ '/category/' | append: cat.slug | relative_url }}">{{ cat.name }}</a>
