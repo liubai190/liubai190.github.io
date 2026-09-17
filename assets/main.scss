@@ -12,7 +12,9 @@
 
 .header-flex {
   display: flex;
-  justify-content: space-between;
+  /* 用品牌区的 margin-right:auto 把工具区和导航顶到右边，
+     这样导航的右边缘 = 720px 正文栏右边缘，跟首页日期对齐 */
+  justify-content: flex-start;
   align-items: flex-start;
   flex-wrap: wrap;
   gap: 12px 24px;
@@ -31,7 +33,54 @@
   }
 }
 
+/* 放大镜 + 汉堡两个图标按钮的容器，排在导航左边 */
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-top: 4px;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #282728;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.2s ease, background-color 0.2s ease;
+
+  &:hover {
+    color: #9a9a9a;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #9a9a9a;
+    outline-offset: 2px;
+  }
+}
+
+/* 手机端的三条线：勾选框本体藏起来，label 当按钮用（纯 CSS，不写 JS） */
+.nav-trigger {
+  display: none;
+}
+
+.nav-toggle {
+  display: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 .header-brand {
+  margin-right: auto;
+  min-width: 0;
+
   .header-title {
     color: #282728;
     font-size: 24px;
@@ -76,11 +125,233 @@
 
 @media (max-width: 640px) {
   .header-flex {
-    flex-direction: column;
+    /* 站名和图标同一行，别像以前那样上下堆 */
+    flex-direction: row;
+    /* 手机上给左右留白，别贴屏幕边 */
+    padding-left: 18px;
+    padding-right: 18px;
+    padding-top: 26px;
+  }
+
+  .header-tools {
+    gap: 8px;
+    padding-top: 0;
+  }
+
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* 三条线出来，分类默认收着 */
+  .nav-toggle {
+    display: inline-flex;
   }
 
   .header-nav {
+    order: 3;
+    flex-basis: 100%;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    margin-top: 6px;
     padding-top: 0;
+    border-top: 1px solid #ececec;
+
+    .header-link {
+      /* 三条线在右边，展开的分类也跟着靠右；
+         右边留 7px = 图标按钮(34px)里 20px 图标的左右留白，正好跟三条线右缘对齐 */
+      padding: 13px 7px;
+      border-bottom: 1px solid #f2f2f2;
+      font-size: 16px;
+      text-align: right;
+
+      &:hover {
+        color: #282728;
+      }
+    }
+  }
+
+  /* 三条线被点中，分类就铺开 */
+  .nav-trigger:checked ~ .header-nav {
+    display: flex;
+  }
+}
+
+/* ===== 全站搜索：全屏遮罩 + 结果列表 ===== */
+
+body.search-open {
+  overflow: hidden;
+}
+
+.search-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 200;
+  background: rgba(253, 253, 253, 0.97);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+
+  &[hidden] {
+    display: none;
+  }
+
+  &.is-open {
+    opacity: 1;
+  }
+}
+
+.search-panel {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 9vh 24px 80px;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+  transition: border-color 0.2s ease;
+
+  &:focus-within {
+    border-color: #b5b5b5;
+  }
+
+  .search-bar-icon {
+    flex: none;
+    color: #9a9a9a;
+  }
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #282728;
+  font-family: inherit;
+  font-size: 17px;
+  line-height: 1.5;
+  -webkit-appearance: none;
+  appearance: none;
+
+  &::placeholder {
+    color: #b5b5b5;
+  }
+
+  &::-webkit-search-cancel-button,
+  &::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
+
+.search-close {
+  flex: none;
+  color: #9a9a9a;
+
+  &:hover {
+    color: #282728;
+  }
+}
+
+.search-tip {
+  margin: 14px 2px 0;
+  color: #9a9a9a;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+
+  /* 没输入时是空的，别留一行空白占位 */
+  &:empty {
+    display: none;
+  }
+}
+
+.search-results {
+  list-style: none;
+  padding-left: 0;
+  margin: 16px 0 0;
+
+  li {
+    border-bottom: 1px solid #f0f0f0;
+    border-radius: 8px;
+    transition: background-color 0.15s ease;
+
+    &.is-active,
+    &:hover {
+      background: #f6f6f6;
+    }
+  }
+
+  a {
+    display: block;
+    padding: 14px 12px;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: none;
+    }
+  }
+
+  .search-hit-title {
+    display: block;
+    color: #282728;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.5;
+    margin-bottom: 3px;
+  }
+
+  .search-hit-meta {
+    display: block;
+    color: #9a9a9a;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    margin-bottom: 6px;
+  }
+
+  .search-hit-snippet {
+    display: block;
+    color: #555;
+    font-size: 13.5px;
+    line-height: 1.65;
+    word-break: break-word;
+  }
+
+  mark {
+    padding: 0 1px;
+    border-radius: 2px;
+    background: #fff2b8;
+    color: inherit;
+  }
+}
+
+@media (max-width: 640px) {
+  .search-panel {
+    padding: 5vh 18px 60px;
+  }
+
+  .search-bar {
+    padding: 8px 8px 8px 12px;
+  }
+
+  .search-input {
+    font-size: 16px;
   }
 }
 

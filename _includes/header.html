@@ -6,13 +6,34 @@
       <p class="header-slogan">{{ site.subtitle | escape }}</p>
       {%- endif -%}
     </div>
-    <nav class="header-nav">
+
+    <div class="header-tools">
+      <button class="icon-btn search-toggle" id="search-toggle" type="button" aria-label="搜索文章" aria-expanded="false" aria-controls="search-overlay">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+          <circle cx="10.5" cy="10.5" r="6.6" fill="none" stroke="currentColor" stroke-width="1.8"/>
+          <line x1="15.4" y1="15.4" x2="21" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <!-- 三条线：label 点一下等于勾选下面的勾选框，纯 CSS 收起分类 -->
+      <label class="icon-btn nav-toggle" for="nav-trigger" aria-label="展开分类">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+          <line x1="3" y1="7" x2="21" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="3" y1="17" x2="21" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </label>
+    </div>
+
+    <input type="checkbox" id="nav-trigger" class="nav-trigger" aria-label="展开分类">
+
+    <nav class="header-nav" id="header-nav" aria-label="分类导航">
       {%- for cat in site.data.categories -%}
       <a class="header-link" href="{{ '/category/' | append: cat.slug | relative_url }}">{{ cat.name }}</a>
       {%- endfor -%}
       <a class="header-link" href="{{ '/about' | relative_url }}">关于</a>
     </nav>
   </div>
+
   <script>
     (function () {
       var OFF = '┬─┬ノ( º _ ºノ)';
@@ -34,3 +55,4 @@
     })();
   </script>
 </header>
+{% include search.html %}

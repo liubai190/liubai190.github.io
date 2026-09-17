@@ -1,0 +1,215 @@
+{%- comment -%}
+全站搜索：放大镜按钮 + 全屏遮罩。索引来自 /search.json（构建时由 Liquid 生成）。
+整块用 {::nomarkdown} 包住是没必要——这是 include，不经过 markdown 解析。
+{%- endcomment -%}
+<div class="search-overlay" id="search-overlay" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="搜索文章">
+    <div class="search-bar">
+      <svg class="search-bar-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+        <circle cx="10.5" cy="10.5" r="6.6" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <line x1="15.4" y1="15.4" x2="21" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <input class="search-input" id="search-input" type="search" placeholder="搜索标题和正文…"
+             autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="搜索关键词">
+      <button class="icon-btn search-close" id="search-close" type="button" aria-label="关闭搜索">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <!-- 只在有输入之后报结果数，默认是空的（:empty 会被 CSS 藏掉） -->
+    <p class="search-tip" id="search-tip"></p>
+    <ul class="search-results" id="search-results"></ul>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var overlay = document.getElementById('search-overlay');
+    if (!overlay) { return; }
+
+    var input = document.getElementById('search-input');
+    var list = document.getElementById('search-results');
+    var tip = document.getElementById('search-tip');
+    var openBtn = document.getElementById('search-toggle');
+    var closeBtn = document.getElementById('search-close');
+    var INDEX_URL = {{ "/search.json" | relative_url | jsonify }};
+
+    var index = null;
+    var loading = false;
+    var active = -1;
+
+    /* ---------- 索引：首次打开才拉，拉过一次就常驻内存 ---------- */
+
+    function loadIndex() {
+      if (index || loading) { return; }
+      loading = true;
+      fetch(INDEX_URL)
+        .then(function (r) { return r.json(); })
+        .catch(function () { return []; })
+        .then(function (data) {
+          index = data || [];
+          loading = false;
+          render(input.value);
+        });
+    }
+
+    /* ---------- 工具 ---------- */
+
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    /* 把正文里的换行、连续空格压成单个空格，方便截片段 */
+    function flat(s) {
+      return String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
+    }
+
+    /* 截一段命中位置附近的文字，并把关键词包成 <mark> */
+    function snippet(text, key) {
+      var t = flat(text);
+      var i = t.toLowerCase().indexOf(key);
+      if (i < 0) {
+        return esc(t.slice(0, 80)) + (t.length > 80 ? '…' : '');
+      }
+      var start = Math.max(0, i - 26);
+      var out = esc(t.slice(start, start + 100));
+      var k = esc(key);
+      var j = out.toLowerCase().indexOf(k.toLowerCase());
+      if (j >= 0) {
+        out = out.slice(0, j) + '<mark>' + out.slice(j, j + k.length) + '</mark>' + out.slice(j + k.length);
+      }
+      return (start > 0 ? '…' : '') + out + (start + 100 < t.length ? '…' : '');
+    }
+
+    /* ---------- 渲染 ---------- */
+
+    function render(q) {
+      var key = flat(q).toLowerCase();
+      active = -1;
+
+      if (!key) {
+        list.innerHTML = '';
+        tip.textContent = '';
+        return;
+      }
+      if (!index) {
+        tip.textContent = '正在载入索引…';
+        return;
+      }
+
+      var hits = [];
+      for (var i = 0; i < index.length; i++) {
+        var it = index[i];
+        var inTitle = flat(it.title).toLowerCase().indexOf(key) >= 0;
+        var body = flat(it.content);
+        var inBody = body.toLowerCase().indexOf(key) >= 0;
+        if (!inTitle && !inBody) { continue; }
+        hits.push({
+          it: it,
+          top: inTitle,
+          txt: inBody ? snippet(it.content, key) : esc(body.slice(0, 80)) + (body.length > 80 ? '…' : '')
+        });
+      }
+
+      /* 标题命中的排前面 */
+      hits.sort(function (a, b) { return (b.top ? 1 : 0) - (a.top ? 1 : 0); });
+
+      tip.textContent = hits.length
+        ? '找到 ' + hits.length + ' 篇'
+        : '没有找到「' + flat(q) + '」';
+
+      var html = '';
+      for (var n = 0; n < hits.length; n++) {
+        var h = hits[n].it;
+        html += '<li><a href="' + h.url + '">'
+          + '<span class="search-hit-title">' + esc(h.title) + '</span>'
+          + '<span class="search-hit-meta">' + esc(h.date) + (h.category ? ' · ' + esc(h.category) : '') + '</span>'
+          + '<span class="search-hit-snippet">' + hits[n].txt + '</span>'
+          + '</a></li>';
+      }
+      list.innerHTML = html;
+    }
+
+    /* ---------- 开关 ---------- */
+
+    var hideTimer = null;
+
+    function open() {
+      if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+      overlay.hidden = false;
+      document.body.classList.add('search-open');
+      if (openBtn) { openBtn.setAttribute('aria-expanded', 'true'); }
+      window.requestAnimationFrame
+        ? window.requestAnimationFrame(function () { overlay.classList.add('is-open'); })
+        : overlay.classList.add('is-open');
+      setTimeout(function () { input.focus(); }, 20);
+      loadIndex();
+    }
+
+    function close() {
+      overlay.classList.remove('is-open');
+      document.body.classList.remove('search-open');
+      if (openBtn) { openBtn.setAttribute('aria-expanded', 'false'); }
+      hideTimer = setTimeout(function () { overlay.hidden = true; hideTimer = null; }, 180);
+    }
+
+    function links() { return list.querySelectorAll('a'); }
+
+    function move(step) {
+      var a = links();
+      if (!a.length) { return; }
+      active = (active + step + a.length) % a.length;
+      for (var i = 0; i < a.length; i++) {
+        a[i].parentNode.classList.toggle('is-active', i === active);
+      }
+      var cur = a[active];
+      if (cur && cur.scrollIntoView) { cur.scrollIntoView({ block: 'nearest' }); }
+    }
+
+    /* ---------- 事件 ---------- */
+
+    if (openBtn) { openBtn.addEventListener('click', open); }
+    if (closeBtn) { closeBtn.addEventListener('click', close); }
+
+    input.addEventListener('input', function () {
+      loadIndex();
+      render(input.value);
+    });
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); move(1); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); return; }
+      if (e.key === 'Enter') {
+        var a = links();
+        if (!a.length) { return; }
+        var target = a[active >= 0 ? active : 0];
+        if (target) { window.location.href = target.getAttribute('href'); }
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !overlay.hidden) { close(); }
+    });
+
+    /* 点遮罩空白处关闭（面板本身有内边距，点面板不关） */
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) { close(); }
+    });
+
+    /* 从往返缓存恢复时收起来，别让回到页面时遮罩还盖着 */
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted) {
+        overlay.classList.remove('is-open');
+        overlay.hidden = true;
+        document.body.classList.remove('search-open');
+        if (openBtn) { openBtn.setAttribute('aria-expanded', 'false'); }
+      }
+    });
+  })();
+</script>
