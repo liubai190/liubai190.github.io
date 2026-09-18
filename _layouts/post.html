@@ -1,0 +1,66 @@
+---
+layout: default
+---
+<article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">{{ page.title | escape }}</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="{{ page.date | date_to_xmlschema }}" itemprop="datePublished">
+        {%- assign date_format = site.minima.date_format | default: "%b %-d, %Y" -%}
+        {{ page.date | date: date_format }}
+      </time>
+      {%- if page.author -%}
+        • <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">{{ page.author | escape }}</span></span>
+      {%- endif -%}</p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    {{ content }}
+  </div>
+
+  {%- comment -%}
+    上一篇 / 下一篇：按发布时间排序（早的是上一篇，晚的是下一篇）。
+
+    这里刻意不用 page.previous / page.next：Jekyll 的 site.posts 是倒序的
+    （最新在前），这两个变量的方向和直觉正好相反，是出了名的坑。
+    直接自己遍历一遍，语义一目了然，也不用赌版本行为。
+  {%- endcomment -%}
+  {%- assign nav_hit = false -%}
+  {%- assign nav_seen = nil -%}
+  {%- assign nav_newer = nil -%}
+  {%- assign nav_older = nil -%}
+  {%- for p in site.posts -%}
+    {%- if nav_hit -%}
+      {%- if nav_older == nil -%}{%- assign nav_older = p -%}{%- endif -%}
+    {%- elsif p.url == page.url -%}
+      {%- assign nav_hit = true -%}
+      {%- assign nav_newer = nav_seen -%}
+    {%- else -%}
+      {%- assign nav_seen = p -%}
+    {%- endif -%}
+  {%- endfor -%}
+
+  {%- if nav_older or nav_newer -%}
+  <nav class="post-nav" aria-label="文章导航">
+    {%- if nav_older -%}
+    <a class="post-nav-item post-nav-prev" href="{{ nav_older.url | relative_url }}">
+      <span class="post-nav-label">上一篇</span>
+      <span class="post-nav-title">{{ nav_older.title | escape }}</span>
+    </a>
+    {%- endif -%}
+    {%- if nav_newer -%}
+    <a class="post-nav-item post-nav-next" href="{{ nav_newer.url | relative_url }}">
+      <span class="post-nav-label">下一篇</span>
+      <span class="post-nav-title">{{ nav_newer.title | escape }}</span>
+    </a>
+    {%- endif -%}
+  </nav>
+  {%- endif -%}
+
+  {%- if site.disqus.shortname -%}
+    {%- include disqus_comments.html -%}
+  {%- endif -%}
+
+  <a class="u-url" href="{{ page.url | relative_url }}" hidden></a>
+</article>
