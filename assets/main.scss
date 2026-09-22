@@ -724,11 +724,23 @@ details.post-fold {
     "Ubuntu Mono", "Liberation Mono", "Courier New", monospace;
 }
 
+/* ===== 正文加厚：描边 ===== */
+/* 屏显臻宋的 CDN 分片**只有 400 一档**（154 个 unicode-range 全是 400），
+   所以 font-weight 帮不上忙：写 500 会直接落回 400（浏览器只在 ≥600 时
+   合成假粗），写 600/700 得到的是合成粗体，笔画糊、粗细不匀。
+   改用描边加厚：0.2px 大约让墨量 +12%，是「明显变厚但还不发闷」的那档。
+   -webkit-text-stroke 是继承属性，挂在 .post-content 上正文 / 小标题 /
+   代码块一起加厚，观感统一。 */
+
+.post-content {
+  -webkit-text-stroke: 0.2px currentColor;
+}
+
 /* ===== 正文排版：字号阶梯 + 行高 ===== */
 /* minima 自带的值从正文 16px 直接跳到 h2 的 32px（2 倍），层次过猛、
    跟正文脱节。这里按「每级只比下一级大一点点」重排：
 
-     正文 16 → h4 17 → h3 19 → h2 22 → 正文内 h1 25
+     正文 17 → h4 17 → h3 19 → h2 22 → 正文内 h1 25
      文章页顶部大标题 27（只比 h2 大一档）
 
    行高同时从 minima 的 1.5 放宽到 1.7（另备 1.9 档），正文读起来松快些。
@@ -739,6 +751,8 @@ details.post-fold {
    不必再写一遍断点。 */
 
 .post-content {
+  /* 正文基准字号：16 → 17（2026-09-22，对齐 solazy.me 的 17.6 量级） */
+  font-size: 17px;
   line-height: 1.7;
 
   h1 {
