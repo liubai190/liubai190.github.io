@@ -1,0 +1,33 @@
+{%- comment -%}
+  评论区：giscus —— 数据存在本仓库的 GitHub Discussions 里，零后端、零维护，
+  代价是留言的人得有 GitHub 账号。
+
+  两个 id 不要手写猜，用 API 现取（2026-09-23 已取过一次，见下方注释）：
+    repo-id     = GraphQL repository { id }
+    category-id = GraphQL repository { discussionCategories { nodes { id name } } }
+  换分类时两个都要改：repo_id 是 R_kg… 开头，category_id 是 DIC_kw… 开头。
+
+  开/关：整个区块看 _config.yml 里 giscus.repo 有没有值，
+  把那一行注释掉，评论区就不渲染了（模板不用动）。
+{%- endcomment -%}
+{%- if site.giscus.repo -%}
+<section class="post-comments">
+  <h2 class="post-comments-title">评论</h2>
+  <script src="https://giscus.app/client.js"
+          data-repo="{{ site.giscus.repo }}"
+          data-repo-id="{{ site.giscus.repo_id }}"
+          data-category="{{ site.giscus.category }}"
+          data-category-id="{{ site.giscus.category_id }}"
+          data-mapping="{{ site.giscus.mapping | default: 'pathname' }}"
+          data-strict="0"
+          data-reactions-enabled="1"
+          data-emit-metadata="0"
+          data-input-position="{{ site.giscus.input_position | default: 'top' }}"
+          data-theme="{{ site.giscus.theme | default: 'light' }}"
+          data-lang="zh-CN"
+          data-loading="lazy"
+          crossorigin="anonymous"
+          async>
+  </script>
+</section>
+{%- endif -%}

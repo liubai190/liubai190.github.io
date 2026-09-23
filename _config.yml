@@ -9,3 +9,14 @@ kramdown:
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
+
+# 评论：giscus（数据存在 GitHub Discussions，零后端；留言需 GitHub 账号）
+# 不想挂评论就把 repo 这行注释掉，_includes/giscus.html 会整段不渲染。
+giscus:
+  repo: liubai190/liubai190.github.io
+  repo_id: R_kgDONtvERA
+  category: Announcements
+  category_id: DIC_kwDONtvERM4DGM2f
+  mapping: pathname      # 每个页面一个讨论；改 URL 会让评论对不上，慎改文章路径
+  input_position: top    # 输入框放评论列表上方，新站冷启动时少滚一屏
+  theme: light

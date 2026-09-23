@@ -852,6 +852,39 @@ details.post-fold {
   }
 }
 
+/* ===== 文章底部：评论区（giscus）===== */
+/* 容器只管位置和留白，评论框本体是 giscus 注入的 iframe，
+   观感由 data-theme 决定（现在用内置的 light）。上边框跟 .post-nav 同款，
+   让「导航 → 评论」两个页尾块的节奏一致。 */
+
+.post-comments {
+  margin-top: 56px;
+  padding-top: 24px;
+  border-top: 1px solid #ececec;
+}
+
+/* 「评论」两个字属于页尾信息层，字号跟 .post-nav-title 对齐（15px），
+   不去抢正文 h2（19px）的层级 */
+.post-comments-title {
+  margin: 0 0 20px;
+  color: #282728;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+/* iframe 是异步注入的，先占个位免得加载完页面往下跳 */
+.post-comments .giscus {
+  min-height: 180px;
+}
+
+@media (max-width: 640px) {
+  .post-comments {
+    margin-top: 40px;
+    padding-top: 20px;
+  }
+}
+
 /* ===== 首页骰子：随机翻一篇 ===== */
 /* 悬浮在 720px 正文栏右侧外面一点，纵向落在页脚上方。
    线上 body 是 min-height:100vh 的 flex 纵向布局、.page-content 带 flex:1，

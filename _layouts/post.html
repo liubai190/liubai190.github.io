@@ -58,9 +58,13 @@ layout: default
   </nav>
   {%- endif -%}
 
-  {%- if site.disqus.shortname -%}
-    {%- include disqus_comments.html -%}
-  {%- endif -%}
+  {%- comment -%}
+    评论区放最底部（正文 → 上下篇导航 → 评论）：现有版式已经定稿，
+    新块追加在后面，对已有排版零干扰。
+
+    原先是 minima 自带的 disqus 占位，站点不用 disqus，换成 giscus。
+  {%- endcomment -%}
+  {%- include giscus.html -%}
 
   <a class="u-url" href="{{ page.url | relative_url }}" hidden></a>
 </article>
