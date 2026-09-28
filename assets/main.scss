@@ -984,3 +984,42 @@ details.post-fold {
   }
 }
 
+/* ===== 正文：行内渐变字（局部上色）===== */
+/* 写法：<span class="rainbow">彩色</span>
+   2026-09-28 起用在《我的墨水屏伙计们》的 B13 / S6 Color+ / B7 pro 三个标题上。
+   效果名：局部 · 全光谱横向 90°（候选方案见 build_color_preview.py）。
+   只在被包住的那个词上生效，行内元素，不影响字号行高。 */
+
+.rainbow {
+  /* 【必须写】关掉继承来的描边。.post-content 上有
+     -webkit-text-stroke: 0.2px currentColor，而下面把文字填充色置成透明之后，
+     currentColor 也跟着透明 → 描边一并消失，看着像字掉了一半。
+     显式写 0 语义清楚；代价是这个字比旁边的细 0.2px，实测肉眼看不出来。 */
+  -webkit-text-stroke: 0;
+  /* 兜底色：万一来访浏览器不支持 background-clip:text，@supports 整段不生效，
+     这里就是一块朱砂色，而不是把文字变成隐形。 */
+  color: #b93a32;
+  /* 这两个字不许被拆到两行：行内元素一换行，渐变的背景盒就裂成两片，
+     每片各自铺一整条光谱，看着像两个色块硬接在一起。窄屏标题最容易踩到。 */
+  white-space: nowrap;
+}
+
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .rainbow {
+    /* 六色全光谱，横向 90°。两个字太短、色带很窄的话可换三色版
+       （build_color_preview.py 里的 .rainbow-3：红 → 金 → 紫）。 */
+    background-image: linear-gradient(
+      90deg,
+      #d7392f 0%,
+      #e07b1f 20%,
+      #d9b226 38%,
+      #3f9e4d 56%,
+      #2a7fb8 74%,
+      #7a4fa3 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
