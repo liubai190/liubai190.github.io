@@ -527,6 +527,10 @@ body.search-open {
     color: #444;
     font-size: 15px;
     white-space: nowrap;
+    /* 当年只写罗马月份（IX），两个字母贴在一起会挤，拉开一点 */
+    letter-spacing: .05em;
+    /* 往年的 2025/1/22 各位数字等宽，竖排看下来更齐 */
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -564,6 +568,10 @@ body.search-open {
         color: #444;
         font-size: 0.9em;
         white-space: nowrap;
+        /* 与首页日期对齐：当年是罗马月份（IX），拉点字距才不挤；
+           往年的 2025/1/22 用等宽数字，几行竖着看是齐的 */
+        letter-spacing: .05em;
+        font-variant-numeric: tabular-nums;
       }
 
       h3 {

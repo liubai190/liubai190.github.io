@@ -1,0 +1,27 @@
+{%- comment -%}
+  发布日期（首页 index.md 和分类页 category.html 共用，保证两处永远一致）。
+
+  规则：
+    文章年份 == 构建年份（site.time）→ 只写罗马月份，如 IX
+    更早的                          → 写完整日期，如 2025/1/22
+
+  年份取 site.time：GitHub Pages 每次构建都是当天，所以跨年后旧文章会自己
+  从罗马月份回落成完整日期，不用手动维护。
+
+  罗马月份看不出具体是哪天，所以整格都带 title，鼠标悬停显示完整日期。
+
+  用法：
+    {% include post-date.html date=post.date %}
+    {% include post-date.html date=post.date class="post-meta" %}
+{%- endcomment -%}
+{%- assign roman = "I,II,III,IV,V,VI,VII,VIII,IX,X,XI,XII" | split: "," -%}
+{%- assign date_cls = include.class | default: "home-post-date" -%}
+{%- assign date_full = include.date | date: "%Y/%-m/%-d" -%}
+{%- assign date_year = include.date | date: "%Y" -%}
+{%- assign year_now = site.time | date: "%Y" -%}
+{%- if date_year == year_now -%}
+  {%- assign roman_i = include.date | date: "%-m" | plus: 0 | minus: 1 -%}
+  <span class="{{ date_cls }}" title="{{ date_full }}">{{ roman[roman_i] }}</span>
+{%- else -%}
+  <span class="{{ date_cls }}" title="{{ date_full }}">{{ date_full }}</span>
+{%- endif -%}

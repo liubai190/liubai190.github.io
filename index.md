@@ -3,13 +3,18 @@ layout: default
 title: 灰木
 ---
 
+{%- comment -%}
+  日期交给 _includes/post-date.html：当年写罗马月份（IX），往年写 2025/1/22，
+  分类页共用同一个 include，改规则只改一处。
+{%- endcomment -%}
+
 {::nomarkdown}
 <div class="home-posts">
   <ul class="home-post-list">
     {%- for post in site.posts -%}
     <li>
       <a class="home-post-link" href="{{ post.url | relative_url }}">{{ post.title | escape }}</a>
-      <span class="home-post-date">{{ post.date | date: "%Y/%-m/%-d" }}</span>
+      {%- include post-date.html date=post.date -%}
     </li>
     {%- endfor -%}
   </ul>
