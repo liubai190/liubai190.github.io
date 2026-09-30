@@ -11,16 +11,17 @@ layout: default
   <ul class="post-list">
     {%- for post in site.categories[page.cat_name] -%}
     <li>
-      {%- comment -%}
-        日期与首页同一套规则、同一个 include（当年罗马月份 / 往年完整日期），
-        避免两处各写一份 Liquid 之后慢慢跑偏。
-      {%- endcomment -%}
-      {%- include post-date.html date=post.date class="post-meta" -%}
       <h3>
         <a class="post-link" href="{{ post.url | relative_url }}">
           {{ post.title | escape }}
         </a>
       </h3>
+      {%- comment -%}
+        标题在前、日期在后，与首页的排列一致（首页是 .home-post-link 在前、
+        .home-post-date 在后，靠 flex space-between 顶到两端）。
+        日期本身也跟首页共用同一个 include：当年罗马月份 / 往年完整日期。
+      {%- endcomment -%}
+      {%- include post-date.html date=post.date class="post-meta" -%}
     </li>
     {%- endfor -%}
   </ul>

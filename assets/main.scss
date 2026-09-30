@@ -537,7 +537,8 @@ body.search-open {
 /* ===== 分类页面样式 ===== */
 
 .category-page {
-  max-width: 640px;
+  /* 与首页 .home-posts 同宽，两个页面的标题/日期列能对齐在同一条竖线上 */
+  max-width: 720px;
   margin: 0 auto;
   padding: 30px 0;
 
@@ -553,35 +554,43 @@ body.search-open {
     margin-bottom: 1.5em;
   }
 
+  /* 列表整块按首页 .home-post-list 走：标题在左、日期在右，
+     间距/字号/颜色都取同一套值，这样两个页面翻起来是一件东西 */
   .post-list {
     list-style: none;
     padding-left: 0;
+    margin-bottom: 0;
 
     li {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
       gap: 16px;
-      margin-bottom: 1.6em;
+      margin-bottom: 2em;
 
       .post-meta {
         color: #444;
-        font-size: 0.9em;
+        font-size: 15px;
         white-space: nowrap;
-        /* 与首页日期对齐：当年是罗马月份（IX），拉点字距才不挤；
+        /* 当年是罗马月份（IX），拉点字距才不挤；
            往年的 2025/1/22 用等宽数字，几行竖着看是齐的 */
         letter-spacing: .05em;
         font-variant-numeric: tabular-nums;
       }
 
       h3 {
-        font-size: 1.05em;
+        font-size: 17px;
         margin: 0;
         font-weight: 400;
 
         a {
           color: #282728;
+          /* 必须显式写：minima 给 .post-link 塞了 font-size: 24px，
+             这条直接落在 <a> 上，h3 的字号管不到它 —— 不写这行，
+             分类页标题会比首页大一号（实测 24px vs 17px）。 */
+          font-size: inherit;
           text-decoration: none;
+          transition: color 0.2s ease;
 
           &:hover {
             color: #9a9a9a;
