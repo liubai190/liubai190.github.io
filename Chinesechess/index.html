@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>中国象棋 · 人机对弈</title>
+<!-- 故意不写 viewport：本站不做移动端适配，手机浏览器会按桌面宽度整体缩放，反而不会碎版 -->
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="head">
+    <a class="back" href="/">← 灰木</a>
+    <h1>中国象棋</h1>
+    <p class="sub">单机人机对弈 · 红先 · 三档难度</p>
+  </header>
+
+  <div class="game">
+    <div class="board-box" id="boardBox">
+      <canvas id="board"></canvas>
+    </div>
+
+    <aside class="panel">
+      <div class="status" id="status">轮到你走</div>
+
+      <div class="field">
+        <div class="label">难度</div>
+        <div class="seg" id="levels">
+          <button type="button" data-level="2">简单</button>
+          <button type="button" data-level="4" class="on">中级</button>
+          <button type="button" data-level="6">高手</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label">操作</div>
+        <div class="btns">
+          <button type="button" id="undo">悔棋</button>
+          <button type="button" id="restart">重新开始</button>
+        </div>
+      </div>
+
+      <div class="toggles">
+        <label class="toggle"><input type="checkbox" id="dots"> 走法提示</label>
+        <label class="toggle"><input type="checkbox" id="sound" checked> 音效</label>
+      </div>
+
+      <div class="meta">
+        <span id="plies">第 0 手</span>
+      </div>
+
+      <p class="note">
+        对弈引擎为本站<strong>自写的 Alpha-Beta 搜索</strong>（着法生成已通过 perft 校验），
+        不含任何第三方代码。
+        <span class="credit">
+          棋子与棋盘美术素材版权归原作者所有（Android 应用《中国象棋》，作者 cnvcs）。
+          本站为非商业的个人博客，此处仅作学习与怀旧展示之用，未作任何修改或再分发；
+          如权利人认为不妥，请联系本站即刻移除。
+        </span>
+      </p>
+    </aside>
+  </div>
+</div>
+
+<audio id="snd-select"  src="audio/select.wav"  preload="auto"></audio>
+<audio id="snd-move"    src="audio/move.wav"    preload="auto"></audio>
+<audio id="snd-capture" src="audio/capture.wav" preload="auto"></audio>
+<audio id="snd-check"   src="audio/check.wav"   preload="auto"></audio>
+<audio id="snd-win"     src="audio/win.wav"     preload="auto"></audio>
+<audio id="snd-lose"    src="audio/lose.wav"    preload="auto"></audio>
+
+<script src="js/chess-core.js"></script>
+<script src="js/chess-ui.js"></script>
+</body>
+</html>
