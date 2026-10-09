@@ -1,5 +1,6 @@
-/* 中国象棋 · 页面样式
-   视觉对齐 cnvcs《中国象棋》默认皮肤：深色木纹底 + 浅木棋盘 + 金珠外框 */
+/* 四界大战（四人象棋）· 页面样式
+   视觉沿用 cnvcs《中国象棋》默认皮肤：深色木纹底 + 浅木棋盘 + 金饰
+   与上一版（两人象棋）的差别：面板从棋盘右侧挪到棋盘下方，横向铺开 */
 
 :root {
   --cream: #f3e7d3;
@@ -7,9 +8,15 @@
   --mute: #a8937a;
   --gold: #e0b354;
   --gold-d: #b98a24;
-  --wood-edge: rgba(24, 14, 6, .55);
   --card: rgba(28, 17, 8, .42);
   --hair: rgba(224, 179, 84, .30);
+  /* 四方标识色：与棋子墨色同色相，但提亮 —— 面板是深木底（亮度 ~45），
+     直接搬棋子墨（青 #008080 亮度 90 / 蓝 #1b5370 亮度 70）会看不见。
+     军名与色名一致：红 / 蓝 / 黑 / 青（2026-10-09 起，界面文字同此）。 */
+  --red: #d6503f;        /* 红方（你）：棋子墨是红 */
+  --teal: #35b2ac;       /* 青军：棋子墨是水鸭色 #008080 */
+  --blue: #4e9fd1;       /* 蓝方：棋子墨是蓝 #1b5370 */
+  --ink: #000000;        /* 黑方：纯黑，与棋子墨一致（2026-10-09 用户要求「黑就叫黑」） */
 }
 
 * { box-sizing: border-box; }
@@ -17,21 +24,23 @@
 html, body {
   margin: 0;
   padding: 0;
-  background-color: #2b1a0d;
   color: var(--cream);
 }
 
+/* 木纹底挂在 html 上：body 的盒子只有内容那么高，内容不足一屏时
+   下面会露出 html 的底色（深褐），看着像断了一截 */
+html {
+  min-height: 100%;
+  background: #2b1a0d url("../img/wood.jpg") center center / cover no-repeat fixed;
+}
+
 body {
+  min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei",
                "PingFang SC", "Hiragino Sans GB", sans-serif;
   font-size: 15px;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
-  background-image: url("../img/wood.jpg");
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  background-repeat: no-repeat;
 }
 
 /* 木纹上压一层暗罩，保证文字对比度 */
@@ -44,16 +53,17 @@ body::before {
   z-index: 0;
 }
 
+/* 棋盘宽 1116（2026-10-09 加金珠轨后 1078 → 1116），wrap 要留得下：1116 + 48 = 1164 */
 .wrap {
   position: relative;
   z-index: 1;
-  max-width: 1000px;
+  max-width: 1180px;
   margin: 0 auto;
-  padding: 30px 24px 54px;
+  padding: 26px 24px 54px;
 }
 
 /* ---------- 页头 ---------- */
-.head { position: relative; margin-bottom: 20px; }
+.head { position: relative; margin-bottom: 16px; }
 .back {
   position: absolute;
   top: 4px; right: 0;
@@ -81,18 +91,19 @@ body::before {
   letter-spacing: .04em;
 }
 
-/* ---------- 布局 ---------- */
-.game { display: flex; gap: 30px; align-items: flex-start; }
+/* ---------- 布局：棋盘在上，面板在下 ---------- */
+.game { display: block; }
 
 .board-box {
   position: relative;
-  flex: 0 0 auto;
   line-height: 0;
+  margin: 0 auto;
+  width: fit-content;
 }
 #board { display: block; cursor: pointer; }
 
-/* ---------- 右侧面板 ---------- */
-.panel { flex: 1 1 auto; min-width: 190px; padding-top: 4px; }
+/* ---------- 下方面板 ---------- */
+.panel { margin-top: 18px; }
 
 .status {
   font-size: 15px;
@@ -102,7 +113,6 @@ body::before {
   border: 1px solid var(--hair);
   border-radius: 4px;
   background: var(--card);
-  margin-bottom: 20px;
   min-height: 40px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
 }
@@ -116,24 +126,63 @@ body::before {
   0%, 100% { opacity: .2; }
   50%      { opacity: 1; }
 }
+.status.hint { color: #ffd98a; }
 .status.over {
   color: #ffe7a8;
   border-color: rgba(224, 179, 84, .65);
   background: rgba(70, 24, 14, .55);
 }
 
-.field { margin-bottom: 18px; }
-.field .label {
+/* 四家状态条 */
+.sides {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 16px;
+  font-size: 12.5px;
+  letter-spacing: .06em;
+}
+.sides .side {
+  padding: 3px 12px;
+  border: 1px solid rgba(224, 179, 84, .22);
+  border-radius: 999px;
+  color: #9b8468;
+  background: rgba(28, 17, 8, .30);
+  transition: color .15s, border-color .15s, background .15s;
+}
+/* 四家标识色与棋子一致：s0 红、s1 黑、s2 青、s3 蓝（编号 = core.js 的内部常量） */
+.sides .s0 { color: var(--red); }
+.sides .s1 { color: var(--ink); }
+.sides .s2 { color: var(--teal); }
+.sides .s3 { color: var(--blue); }
+.sides .side.now {
+  border-color: rgba(224, 179, 84, .70);
+  background: rgba(70, 44, 14, .60);
+  box-shadow: 0 0 0 1px rgba(224, 179, 84, .25) inset;
+}
+.sides .side.dead {
+  color: #6d5c48;
+  text-decoration: line-through;
+  opacity: .7;
+}
+
+/* 横向铺开的四组控件 */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 34px;
+  align-items: flex-start;
+}
+.row .field { flex: 0 0 auto; margin: 0; }
+.row .field .label {
   font-size: 12px;
   color: var(--mute);
   letter-spacing: .14em;
-  margin-bottom: 8px;
+  margin-bottom: 7px;
 }
 
 .seg { display: flex; border: 1px solid var(--hair); border-radius: 4px; overflow: hidden; }
 .seg button {
-  flex: 1 1 0;
-  padding: 7px 0;
+  padding: 7px 18px;
   font-size: 13.5px;
   font-family: inherit;
   color: var(--cream2);
@@ -144,6 +193,8 @@ body::before {
   transition: background .15s, color .15s;
 }
 .seg button:first-child { border-left: 0; }
+/* 「电脑间隔」5 个数字按钮：窄一点，不然整行铺不完 */
+.seg.narrow button { padding: 7px 13px; min-width: 44px; text-align: center; }
 .seg button:hover { background: rgba(60, 38, 16, .55); color: var(--cream); }
 .seg button.on {
   background: linear-gradient(#f0c463, #c8921f);
@@ -154,8 +205,7 @@ body::before {
 
 .btns { display: flex; gap: 10px; }
 .btns button {
-  flex: 1 1 0;
-  padding: 9px 0;
+  padding: 8px 20px;
   font-size: 13.5px;
   font-family: inherit;
   color: var(--cream2);
@@ -173,10 +223,7 @@ body::before {
   border-color: rgba(224, 179, 84, .20);
 }
 
-.toggles { margin-bottom: 16px; }
-.toggles .toggle { margin-bottom: 7px; }
-.toggles .toggle:last-child { margin-bottom: 0; }
-
+.toggles { display: flex; gap: 18px; }
 .toggle {
   display: flex;
   align-items: center;
@@ -185,20 +232,25 @@ body::before {
   color: var(--cream2);
   cursor: pointer;
   user-select: none;
-  margin-bottom: 16px;
 }
 .toggle input { accent-color: var(--gold-d); width: 15px; height: 15px; }
 .toggle:hover { color: var(--cream); }
 
-.meta { font-size: 13px; color: var(--mute); margin-bottom: 20px; }
+.meta { font-size: 13.5px; color: var(--mute); padding-top: 5px; }
 
 .note {
   font-size: 12px;
-  line-height: 1.8;
+  line-height: 1.85;
   color: var(--mute);
   border-top: 1px solid rgba(224, 179, 84, .22);
-  padding-top: 14px;
-  margin: 0;
+  padding-top: 13px;
+  margin: 18px 0 0;
 }
+.note + .note { margin-top: 12px; }
 .note strong { color: var(--cream2); font-weight: 600; }
 .note .credit { display: block; margin-top: 8px; color: #9b8468; }
+/* 规则段里的四方字，色值与状态条同源 —— 改一处两边一起变 */
+.note .s-red { color: var(--red); }
+.note .s-black { color: var(--ink); }
+.note .s-teal { color: var(--teal); }
+.note .s-blue { color: var(--blue); }

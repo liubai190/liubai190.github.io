@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>四界大战 · 四人象棋</title>
+<!-- 故意不写 viewport：本站不做移动端适配，手机浏览器会按桌面宽度整体缩放，反而不会碎版 -->
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="head">
+    <a class="back" href="/">← 灰木</a>
+    <h1>四界大战</h1>
+    <p class="sub">四方混战 · 红（你）蓝 黑 青 · 逆时针行棋 · 三档难度 · 电脑节奏可调</p>
+  </header>
+
+  <div class="game">
+    <div class="board-box" id="boardBox">
+      <canvas id="board"></canvas>
+    </div>
+
+    <div class="panel">
+      <div class="status" id="status">轮到你走</div>
+
+      <div class="sides" id="sides"></div>
+
+      <div class="row">
+        <div class="field">
+          <div class="label">难度</div>
+          <div class="seg" id="levels">
+            <button type="button" data-level="1">简单</button>
+            <button type="button" data-level="2" class="on">中等</button>
+            <button type="button" data-level="3">困难</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">电脑间隔（秒）</div>
+          <div class="seg narrow" id="delay">
+            <button type="button" data-delay="2">2</button>
+            <button type="button" data-delay="3" class="on">3</button>
+            <button type="button" data-delay="5">5</button>
+            <button type="button" data-delay="7">7</button>
+            <button type="button" data-delay="10">10</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">操作</div>
+          <div class="btns">
+            <button type="button" id="undo">悔棋</button>
+            <button type="button" id="restart">重新开始</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">选项</div>
+          <div class="toggles">
+            <label class="toggle"><input type="checkbox" id="dots"> 走法提示</label>
+            <label class="toggle"><input type="checkbox" id="sound" checked> 音效</label>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">进程</div>
+          <div class="meta" id="meta">第 0 手</div>
+        </div>
+      </div>
+
+      <p class="note">
+        <strong>规则</strong>：与中国象棋同。红方在下、青方在左、黑方在上、蓝方在右，
+        按 <span class="s-red">红</span> → <span class="s-blue">蓝</span> →
+        <span class="s-black">黑</span> → <span class="s-teal">青</span> 逆时针轮流走子。
+        另加一条：<strong>除将帅之外，没走动过的棋子都不能被吃</strong>——被别人吃过、或者自己走出去又退回来，
+        都算「走动过」。被将死（或困毙）的一方出局，残子从盘上撤掉，最后存活的一家获胜。
+        勾上「走法提示」可以看到选中棋子的可走点；被上面那条规则挡下的目标会画成虚线圈加斜杠。
+        「电脑间隔」控制每一家电脑在出手前等多久（2/3/5/7/10 秒），嫌它下得太快就往右调。
+      </p>
+
+      <p class="note">
+        对弈引擎为本站<strong>自写的偏执搜索（paranoid alpha-beta）</strong>，
+        着法生成已用「朴素生成器」做过逐格差分校验，不含任何第三方代码。
+        <span class="credit">
+          棋子与棋盘美术素材版权归原作者所有（Android 应用《中国象棋》，作者 cnvcs）。
+          本页在原素材基础上，按示意图《象棋全图》补出了青、蓝两方字形并把棋盘扩充为四方。
+          本站为非商业的个人博客，此处仅作学习与怀旧展示之用；如权利人认为不妥，请联系本站即刻移除。
+        </span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<audio id="snd-select"  src="audio/select.wav"  preload="auto"></audio>
+<audio id="snd-move"    src="audio/move.wav"    preload="auto"></audio>
+<audio id="snd-capture" src="audio/capture.wav" preload="auto"></audio>
+<audio id="snd-check"   src="audio/check.wav"   preload="auto"></audio>
+<audio id="snd-win"     src="audio/win.wav"     preload="auto"></audio>
+<audio id="snd-lose"    src="audio/lose.wav"    preload="auto"></audio>
+
+<script src="js/chess4-core.js"></script>
+<script src="js/chess4-ui.js"></script>
+</body>
+</html>
