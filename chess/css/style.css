@@ -1,0 +1,175 @@
+/* 棋 · 导航页
+   视觉走站点的纸面风（白底 / 深灰字 / 细线），不跟游戏页那套深色木纹 ——
+   这里是「书架」，四张卡各自通向一个木盘页面。
+   颜色只在两处出现：棋子实物图，和悬停时的木色描边。 */
+
+:root {
+  --ink: #282728;
+  --ink2: #5b5854;
+  --mute: #9a9a9a;
+  --mute2: #b5b5b5;
+  --hair: #ececec;
+  --wood: #b98a24;
+  --paper: #fdfdfd;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei",
+               "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 44px 24px 72px;
+}
+
+/* ---------- 页头 ---------- */
+.head { position: relative; }
+.back {
+  position: absolute;
+  top: 8px; right: 0;
+  font-size: 13px;
+  color: var(--mute);
+  text-decoration: none;
+  transition: color .15s;
+}
+.back:hover { color: var(--ink); }
+
+.head h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: .18em;
+  color: var(--ink);
+  font-family: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif;
+}
+.head .sub {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--mute);
+  letter-spacing: .04em;
+}
+
+/* ---------- 四张卡 ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  list-style: none;
+  padding: 0;
+  margin: 36px 0 0;
+}
+
+.card {
+  position: relative;
+  display: block;
+  height: 100%;
+  padding: 22px 22px 20px;
+  background: #fff;
+  border: 1px solid var(--hair);
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color .18s, box-shadow .18s, transform .18s;
+}
+.card:hover {
+  border-color: #dcc9a4;
+  box-shadow: 0 10px 26px rgba(40, 32, 20, .07);
+  transform: translateY(-2px);
+}
+.card:focus-visible {
+  outline: 2px solid var(--wood);
+  outline-offset: 2px;
+}
+
+.arrow {
+  position: absolute;
+  top: 20px; right: 20px;
+  font-size: 15px;
+  color: #d5d0c8;
+  transition: color .18s, transform .18s;
+}
+.card:hover .arrow { color: var(--wood); transform: translateX(3px); }
+
+/* 棋子实物图：叠着排，像一小把刚码好的子 */
+.icos {
+  display: flex;
+  align-items: center;
+  height: 46px;
+  margin-bottom: 15px;
+}
+.icos img {
+  display: block;
+  width: 46px;
+  height: 46px;
+}
+.icos img + img { margin-left: -11px; }
+
+.ttl {
+  font-family: "Songti SC", "STSong", "SimSun", "Noto Serif SC", serif;
+  font-size: 21px;
+  letter-spacing: .08em;
+  color: var(--ink);
+}
+.tag {
+  margin-left: 10px;
+  font-size: 12px;
+  color: var(--mute);
+  letter-spacing: .14em;
+}
+
+.slug {
+  display: block;
+  margin: 5px 0 11px;
+  font-family: Menlo, Consolas, "Roboto Mono", monospace;
+  font-size: 11.5px;
+  color: var(--mute2);
+  letter-spacing: .02em;
+}
+
+.desc {
+  display: block;
+  font-size: 13.5px;
+  line-height: 1.9;
+  color: var(--ink2);
+}
+.desc em {
+  font-style: normal;
+  border-bottom: 1px solid #e4d7ba;
+}
+
+/* ---------- 页脚说明 ---------- */
+.note {
+  margin: 34px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--hair);
+  font-size: 12.5px;
+  line-height: 1.9;
+  color: var(--ink2);
+}
+.note.fine {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+  font-size: 12px;
+  color: var(--mute);
+}
+
+@media (max-width: 780px) {
+  .grid { grid-template-columns: 1fr; }
+  .wrap { padding: 32px 18px 56px; }
+  .head h1 { font-size: 28px; }
+}

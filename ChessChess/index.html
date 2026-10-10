@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>串串香 · 暗棋连吃</title>
+<!-- 故意不写 viewport：本站不做移动端适配，手机浏览器会按桌面宽度整体缩放，反而不会碎版 -->
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="head">
+    <span class="topnav">
+      <a href="/chess/">← 棋</a>
+      <a href="/">灰木</a>
+    </span>
+    <h1>串串香</h1>
+    <p class="sub">暗棋 · 8×4 交点 · 象棋走法 · 翻开的子能串着连吃</p>
+  </header>
+
+  <div class="game">
+    <div class="board-box" id="boardBox">
+      <canvas id="board"></canvas>
+    </div>
+
+    <div class="panel">
+      <div class="status" id="status">翻一枚棋子开局</div>
+
+      <div class="sides" id="sides"></div>
+      <div class="meta" id="meta">尚未落子</div>
+
+      <div class="row">
+        <div class="field">
+          <div class="label">对局</div>
+          <div class="seg" id="modes">
+            <button type="button" data-mode="pve" class="on">人机</button>
+            <button type="button" data-mode="pvp">双人</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">难度</div>
+          <div class="seg" id="levels">
+            <button type="button" data-level="1">简单</button>
+            <button type="button" data-level="2" class="on">中等</button>
+            <button type="button" data-level="3">困难</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">电脑间隔（秒）</div>
+          <div class="seg narrow" id="delays">
+            <button type="button" data-delay="0.8" class="on">0.8</button>
+            <button type="button" data-delay="1.5">1.5</button>
+            <button type="button" data-delay="2.5">2.5</button>
+            <button type="button" data-delay="4">4</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">操作</div>
+          <div class="btns">
+            <button type="button" id="undo">悔棋</button>
+            <button type="button" id="restart">重新开始</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">选项</div>
+          <div class="toggles">
+            <label class="toggle"><input type="checkbox" id="sound" checked> 音效</label>
+            <label class="toggle"><input type="checkbox" id="hint" checked> 走法提示</label>
+            <button type="button" class="link" id="rules">规则</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rulesbox" id="rulesbox" hidden>
+        <h3>串串香规则</h3>
+        <p><strong>棋盘</strong>　线还是象棋那套 9 竖 × 5 横，但棋子摆在<strong>线的交点</strong>上：
+          8 列 × 4 行共 32 个点，32 枚棋子正好铺满。最上面那条横线和最右边那条竖线留空。</p>
+        <p><strong>开局</strong>　32 枚棋子全部扣着随机铺满，双方轮流翻棋。
+          先行者翻出的第一枚棋子的颜色，就决定他执哪一方。</p>
+        <p><strong>走法</strong>　翻开之后按象棋走法走，但把限制全放开了：
+          车走直线不限格；马走日、<em>不蹩马腿</em>；炮不吃子时走直线、吃子时中间隔一个子打；
+          相（象）走田字、<em>不塞象眼、能过河</em>；仕（士）斜走一格、<em>不出九宫的限制取消</em>；
+          帅（将）和兵（卒）上下左右各走一格，<em>兵也能后退</em>。</p>
+        <p><strong>吃子</strong>　按走法吃，<strong>不看等级大小</strong> —— 兵照样能吃车。</p>
+        <p><strong>连吃</strong>　这是这一局的灵魂：吃掉一个子之后，只要从新位置还能按走法吃到下一个，
+          就可以接着吃，<em>能拐弯换线</em>，一口气串起来。也可以随时停手 ——
+          点谁就吃到谁为止（点第一个被吃的子＝只吃这一个）。</p>
+        <p><strong>暗子</strong>　扣着的子谁都不能吃，但它照样挡路，也照样能给炮当炮架。</p>
+        <p><strong>胜负</strong>　棋子被吃光、或轮到自己却无棋可走，判负。
+          同一局面重复三次、连续 70 手没有吃子也没有翻棋、双方总步数满 500，都判和。
+          这里<em>没有将军</em>，帅就是个普通棋子，被吃就没了。</p>
+      </div>
+
+      <p class="note">
+        <strong>怎么下</strong>：点一枚扣着的棋子就是翻它；点自己的明子会亮出能走的空位（红点）
+        和能吃的落点（红圈）。<strong>圈粗、旁边标着数字的，是沿这条路一直串下去能吃几个</strong>；
+        想提前停手，就点串上中间那一格 —— 那一格自己也有圈（只有一个可吃的就是细圈）。
+        鼠标移到自己的明子上可以直接预览，不用点；
+        嫌晃眼就把「选项」里的<strong>走法提示</strong>取消勾选。
+        电脑只知道你也能看到的东西 —— 已经翻开的子，加上「还没翻开的子只可能是剩下的哪些」，
+        它不会偷看你扣着的子是什么。
+      </p>
+
+      <p class="note">
+        棋子与棋盘美术素材版权归原作者所有（Android 应用《中国象棋》，作者 cnvcs）。
+        棋盘在原素材基础上另行烘焙，规则取自民间玩法「串串香」（玩家口述整理）。
+        本站为非商业的个人博客，此处仅作学习与怀旧展示之用；如权利人认为不妥，请联系本站即刻移除。
+      </p>
+    </div>
+  </div>
+</div>
+
+<audio id="snd-select"  src="audio/select.wav"  preload="auto"></audio>
+<audio id="snd-move"    src="audio/move.wav"    preload="auto"></audio>
+<audio id="snd-capture" src="audio/capture.wav" preload="auto"></audio>
+<audio id="snd-check"   src="audio/check.wav"   preload="auto"></audio>
+<audio id="snd-win"     src="audio/win.wav"     preload="auto"></audio>
+<audio id="snd-lose"    src="audio/lose.wav"    preload="auto"></audio>
+
+<script src="js/ccx-core.js"></script>
+<script src="js/ccx-ui.js"></script>
+</body>
+</html>

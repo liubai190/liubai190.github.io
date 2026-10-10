@@ -1,6 +1,6 @@
-/* 四界大战（四人象棋）· 页面样式
+/* 翻棋（暗棋）· 页面样式
    视觉沿用 cnvcs《中国象棋》默认皮肤：深色木纹底 + 浅木棋盘 + 金饰
-   与上一版（两人象棋）的差别：面板从棋盘右侧挪到棋盘下方，横向铺开 */
+   与四界大战（chess4）同一套语言，只是棋盘换成 8x4 的半盘 */
 
 :root {
   --cream: #f3e7d3;
@@ -10,13 +10,8 @@
   --gold-d: #b98a24;
   --card: rgba(28, 17, 8, .42);
   --hair: rgba(224, 179, 84, .30);
-  /* 四方标识色：与棋子墨色同色相，但提亮 —— 面板是深木底（亮度 ~45），
-     直接搬棋子墨（青 #008080 亮度 90 / 蓝 #1b5370 亮度 70）会看不见。
-     军名与色名一致：红 / 蓝 / 黑 / 青（2026-10-09 起，界面文字同此）。 */
-  --red: #d6503f;        /* 红方（你）：棋子墨是红 */
-  --teal: #35b2ac;       /* 青军：棋子墨是水鸭色 #008080 */
-  --blue: #4e9fd1;       /* 蓝方：棋子墨是蓝 #1b5370 */
-  --ink: #000000;        /* 黑方：纯黑，与棋子墨一致（2026-10-09 用户要求「黑就叫黑」） */
+  --red: #d6503f;
+  --ink: #000000;
 }
 
 * { box-sizing: border-box; }
@@ -53,11 +48,11 @@ body::before {
   z-index: 0;
 }
 
-/* 棋盘宽 1116（2026-10-09 加金珠轨后 1078 → 1116），wrap 要留得下：1116 + 48 = 1164 */
+/* 棋盘宽 888，wrap 要留得下：888 + 48 = 936 */
 .wrap {
   position: relative;
   z-index: 1;
-  max-width: 1180px;
+  max-width: 960px;
   margin: 0 auto;
   padding: 26px 24px 54px;
 }
@@ -140,9 +135,10 @@ body::before {
   background: rgba(70, 24, 14, .55);
 }
 
-/* 四家状态条 */
+/* 状态条 */
 .sides {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin: 12px 0 16px;
   font-size: 12.5px;
@@ -156,23 +152,24 @@ body::before {
   background: rgba(28, 17, 8, .30);
   transition: color .15s, border-color .15s, background .15s;
 }
-/* 四家标识色与棋子一致：s0 红、s1 黑、s2 青、s3 蓝（编号 = core.js 的内部常量） */
-.sides .s0 { color: var(--red); }
-.sides .s1 { color: var(--ink); }
-.sides .s2 { color: var(--teal); }
-.sides .s3 { color: var(--blue); }
+.sides .s-red { color: var(--red); }
+.sides .s-black { color: var(--ink); }
 .sides .side.now {
   border-color: rgba(224, 179, 84, .70);
   background: rgba(70, 44, 14, .60);
   box-shadow: 0 0 0 1px rgba(224, 179, 84, .25) inset;
 }
-.sides .side.dead {
-  color: #6d5c48;
-  text-decoration: line-through;
-  opacity: .7;
+
+/* 上一手摘要 */
+.meta {
+  font-size: 12.5px;
+  color: var(--mute);
+  letter-spacing: .04em;
+  margin: -6px 0 16px 2px;
+  min-height: 20px;
 }
 
-/* 横向铺开的四组控件 */
+/* 横向铺开的控件 */
 .row {
   display: flex;
   flex-wrap: wrap;
@@ -200,8 +197,7 @@ body::before {
   transition: background .15s, color .15s;
 }
 .seg button:first-child { border-left: 0; }
-/* 「电脑间隔」5 个数字按钮：窄一点，不然整行铺不完 */
-.seg.narrow button { padding: 7px 13px; min-width: 44px; text-align: center; }
+.seg.narrow button { padding: 7px 13px; min-width: 48px; text-align: center; }
 .seg button:hover { background: rgba(60, 38, 16, .55); color: var(--cream); }
 .seg button.on {
   background: linear-gradient(#f0c463, #c8921f);
@@ -230,7 +226,7 @@ body::before {
   border-color: rgba(224, 179, 84, .20);
 }
 
-.toggles { display: flex; gap: 18px; }
+.toggles { display: flex; align-items: center; gap: 18px; }
 .toggle {
   display: flex;
   align-items: center;
@@ -243,8 +239,44 @@ body::before {
 .toggle input { accent-color: var(--gold-d); width: 15px; height: 15px; }
 .toggle:hover { color: var(--cream); }
 
-.meta { font-size: 13.5px; color: var(--mute); padding-top: 5px; }
+/* 「规则」按钮：做成和 toggle 同行的文字按钮 */
+.link {
+  padding: 5px 14px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--cream2);
+  background: rgba(28, 17, 8, .38);
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.link:hover { border-color: rgba(224, 179, 84, .60); color: var(--cream); background: rgba(60, 38, 16, .55); }
 
+/* ---------- 规则折叠框 ---------- */
+.rulesbox {
+  margin: 16px 0 0;
+  padding: 14px 18px 6px;
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--cream2);
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  background: rgba(28, 17, 8, .34);
+}
+.rulesbox h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .10em;
+  color: var(--gold);
+}
+.rulesbox p { margin: 0 0 10px; }
+.rulesbox strong { color: var(--cream); }
+.rulesbox em { color: #ffd98a; font-style: normal; }
+.rulesbox .fine { color: var(--mute); border-top: 1px solid rgba(224, 179, 84, .18); padding-top: 10px; }
+
+/* ---------- 页脚说明 ---------- */
 .note {
   font-size: 12px;
   line-height: 1.85;
@@ -255,9 +287,3 @@ body::before {
 }
 .note + .note { margin-top: 12px; }
 .note strong { color: var(--cream2); font-weight: 600; }
-.note .credit { display: block; margin-top: 8px; color: #9b8468; }
-/* 规则段里的四方字，色值与状态条同源 —— 改一处两边一起变 */
-.note .s-red { color: var(--red); }
-.note .s-black { color: var(--ink); }
-.note .s-teal { color: var(--teal); }
-.note .s-blue { color: var(--blue); }

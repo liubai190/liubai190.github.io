@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>棋 · 灰木</title>
+<!-- 故意不写 viewport：本站不做移动端适配，手机浏览器会按桌面宽度整体缩放，反而不会碎版 -->
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <header class="head">
+    <a class="back" href="/">← 灰木</a>
+    <h1>棋</h1>
+    <p class="sub">四个象棋变体 · 都在浏览器里跑 · 纯静态、自写引擎、不用装东西</p>
+  </header>
+
+  <ul class="grid">
+
+    <li>
+      <a class="card" href="/chess4/">
+        <span class="arrow">→</span>
+        <span class="icos">
+          <img src="../chess4/img/r_j.png" alt="">
+          <img src="../chess4/img/b_j.png" alt="">
+          <img src="../chess4/img/g_j.png" alt="">
+          <img src="../chess4/img/y_j.png" alt="">
+        </span>
+        <span class="ttl">四界大战</span><span class="tag">四人象棋</span>
+        <span class="slug">/chess4/</span>
+        <span class="desc">红、蓝、黑、青四方混战，逆时针轮流走子，各带一个九宫。
+          多一条规矩：<em>除将帅之外，没走动过的棋子不能被吃</em>——想活命就得先走出去。
+          另三家都是电脑，三档难度，出手间隔 2～10 秒可调。</span>
+      </a>
+    </li>
+
+    <li>
+      <a class="card" href="/DarkChess/">
+        <span class="arrow">→</span>
+        <span class="icos">
+          <img src="../DarkChess/img/back.png" alt="">
+          <img src="../DarkChess/img/back.png" alt="">
+          <img src="../DarkChess/img/back.png" alt="">
+        </span>
+        <span class="ttl">翻翻棋</span><span class="tag">暗棋</span>
+        <span class="slug">/DarkChess/</span>
+        <span class="desc">4×8 半盘，三十二子全扣着铺满。翻出的第一枚是什么颜色，你就是哪一方；
+          之后按 帅 › 仕 › 相 › 车 › 马 › 炮 › 兵 的等级大吃小——除了兵能吃帅、帅不能吃兵。
+          翻开之前谁都不能碰。人机 / 同机双人两档。</span>
+      </a>
+    </li>
+
+    <li>
+      <a class="card" href="/ChessChess/">
+        <span class="arrow">→</span>
+        <span class="icos">
+          <img src="../ChessChess/img/back.png" alt="">
+          <img src="../ChessChess/img/r_c.png" alt="">
+          <img src="../ChessChess/img/b_m.png" alt="">
+        </span>
+        <span class="ttl">串串香</span><span class="tag">暗棋连吃</span>
+        <span class="slug">/ChessChess/</span>
+        <span class="desc">与翻棋同一副牌，但改到<em>线的交点上</em>，走法照搬象棋——九宫、河界、马腿、象眼一律不管。
+          吃子看走法不看大小，所以兵照样能啃车；翻开的子能顺着线一路串着吃，还可以拐弯，
+          <em>吃到哪一步由你点</em>。</span>
+      </a>
+    </li>
+
+    <li>
+      <a class="card" href="/ChineseChess/">
+        <span class="arrow">→</span>
+        <span class="icos">
+          <img src="../ChineseChess/img/b_j.png" alt="">
+          <img src="../ChineseChess/img/r_j.png" alt="">
+        </span>
+        <span class="ttl">中国象棋</span><span class="tag">标准规则</span>
+        <span class="slug">/ChineseChess/</span>
+        <span class="desc">正经的中国象棋，红先。人机对弈三档难度，也可以同一台机器两个人轮流下；
+          带悔棋、走法提示、音效开关。引擎是本站自写的 Alpha-Beta 搜索，着法生成过了 perft 校验。</span>
+      </a>
+    </li>
+
+  </ul>
+
+  <p class="note">
+    四个页面相互独立，都是纯静态 HTML，没有框架、没有后端、没有第三方代码；
+    棋子和棋盘的画法是各家自己的事，音效是程序合成的。
+    共同的一点：电脑只知道你也能看到的东西——它不会偷看你扣着的子是什么。
+  </p>
+
+  <p class="note fine">
+    棋子与棋盘美术素材版权归原作者所有（Android 应用《中国象棋》，作者 cnvcs），
+    本站为非商业的个人博客，此处仅作学习与怀旧展示之用；如权利人认为不妥，请联系本站即刻移除。
+  </p>
+</div>
+
+</body>
+</html>
