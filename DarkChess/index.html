@@ -11,7 +11,7 @@
 <div class="wrap">
   <header class="head">
     <span class="topnav">
-      <a href="/chess/">← 棋</a>
+      <a href="/chess/">← 象棋</a>
       <a href="/">灰木</a>
     </span>
     <h1>翻棋</h1>
@@ -41,9 +41,9 @@
         <div class="field">
           <div class="label">难度</div>
           <div class="seg" id="levels">
-            <button type="button" data-level="1">简单</button>
-            <button type="button" data-level="2" class="on">中等</button>
-            <button type="button" data-level="3">困难</button>
+            <button type="button" data-level="1" title="见子就吃、不算后果；翻哪枚走哪步都随意">简单</button>
+            <button type="button" data-level="2" class="on" title="吃子前算一步反吃">中等</button>
+            <button type="button" data-level="3" title="被反吃的账算得更细，僵局时会主动找接触">困难</button>
           </div>
         </div>
 
@@ -90,6 +90,16 @@
           暗子不能被吃 —— 只有翻开的棋子才能被吃。</p>
         <p><strong>胜负</strong>　棋子被吃光、或轮到自己却无棋可走，判负。
           相同的局面多次出现、连续 70 步没有吃子或翻棋、双方总步数达到 500 步，都判和。</p>
+        <p class="fine"><strong>「吃光」为什么可信</strong>：扣着的暗子不能被吃，所以一方能被打到
+          一枚不剩时，他那些暗子必然早就翻完了 —— 盘上如果还留着暗子，那些一定属于胜方。
+          结算时所有暗子会自动亮开，一眼就能核对。</p>
+        <p><strong>难度</strong>　三档的差别只有两处：<em>会不会防着被反吃</em>，
+          以及<em>在几个差不多好的走法里挑哪一个</em>。共同点是——
+          <strong>能吃就一定吃</strong>（除非吃下去会被对方反吃回更大的子，那只有中等和困难会算），
+          场上还有暗子没翻时<strong>不会闲着挪子</strong>，会去翻棋找子用。</p>
+        <p class="fine">简单：见子就吃，不管吃完会不会被反吃；翻哪一枚、走哪一步都随意。
+          <br>中等：吃子前先算一步「吃完站那儿会不会挨打」。
+          <br>困难：把被反吃的账算得更细，也最不随机，还懂得在局面僵住时主动找接触。</p>
         <p class="fine"><strong>本页的两处取舍</strong>（规则原文有歧义，说明在此）：
           ① 原文既写「相同的棋子可以互吃」，又写「兵（卒）只能吃对方的将（帅）」。
           本页取通行解法：<em>兵可以吃兵，也可以吃帅，但不能吃其它子</em>。

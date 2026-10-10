@@ -11,11 +11,11 @@
 <div class="wrap">
   <header class="head">
     <span class="topnav">
-      <a href="/chess/">← 棋</a>
+      <a href="/chess/">← 象棋</a>
       <a href="/">灰木</a>
     </span>
     <h1>串串香</h1>
-    <p class="sub">暗棋 · 8×4 交点 · 象棋走法 · 翻开的子能串着连吃</p>
+    <p class="sub">暗棋 · 9×5 交点 · 象棋走法 · 翻开的子能串着连吃</p>
   </header>
 
   <div class="game">
@@ -41,9 +41,9 @@
         <div class="field">
           <div class="label">难度</div>
           <div class="seg" id="levels">
-            <button type="button" data-level="1">简单</button>
-            <button type="button" data-level="2" class="on">中等</button>
-            <button type="button" data-level="3">困难</button>
+            <button type="button" data-level="1" title="见子就吃、不算后果；翻棋和走法都随意">简单</button>
+            <button type="button" data-level="2" class="on" title="吃子前算一步反吃；翻棋会挑旁边有自己人的位置">中等</button>
+            <button type="button" data-level="3" title="被反吃的账算得更细，几乎不随机">困难</button>
           </div>
         </div>
 
@@ -77,9 +77,11 @@
 
       <div class="rulesbox" id="rulesbox" hidden>
         <h3>串串香规则</h3>
-        <p><strong>棋盘</strong>　线还是象棋那套 9 竖 × 5 横，但棋子摆在<strong>线的交点</strong>上：
-          8 列 × 4 行共 32 个点，32 枚棋子正好铺满。最上面那条横线和最右边那条竖线留空。</p>
-        <p><strong>开局</strong>　32 枚棋子全部扣着随机铺满，双方轮流翻棋。
+        <p><strong>棋盘</strong>　线还是象棋那套 9 竖 × 5 横，棋子摆在<strong>线的交点</strong>上：
+          9 条竖线 × 5 条横线交出 <strong>45 个交点，全部可以落子</strong>。
+          开局 32 枚棋子铺在内圈那 32 个点上 —— 最上面那条横线和最右边那条竖线开局留空，
+          但这两条线上的 13 个点照样能走上去、也能在上面吃子。</p>
+        <p><strong>开局</strong>　32 枚棋子全部扣着，随机铺在内圈的 32 个点上，双方轮流翻棋。
           先行者翻出的第一枚棋子的颜色，就决定他执哪一方。</p>
         <p><strong>走法</strong>　翻开之后按象棋走法走，但把限制全放开了：
           车走直线不限格；马走日、<em>不蹩马腿</em>；炮不吃子时走直线、吃子时中间隔一个子打；
@@ -93,6 +95,16 @@
         <p><strong>胜负</strong>　棋子被吃光、或轮到自己却无棋可走，判负。
           同一局面重复三次、连续 70 手没有吃子也没有翻棋、双方总步数满 500，都判和。
           这里<em>没有将军</em>，帅就是个普通棋子，被吃就没了。</p>
+        <p class="fine"><strong>「吃光」为什么可信</strong>：扣着的暗子不能被吃，所以一方能被打到
+          一枚不剩时，他那些暗子必然早就翻完了 —— 盘上如果还留着暗子，那些一定属于胜方。
+          结算时所有暗子会自动亮开，一眼就能核对。</p>
+        <p><strong>难度</strong>　三档的差别只有两处：<em>会不会防着被反吃</em>，
+          以及<em>在几个差不多好的走法里挑哪一个</em>。共同点是——
+          <strong>能吃就一定吃</strong>（除非吃下去会被对方反吃回更大的子，那只有中等和困难会算），
+          场上还有暗子没翻时<strong>不会闲着挪子</strong>，会去翻棋找子用。</p>
+        <p class="fine">简单：见子就吃，不管吃完会不会被反吃；翻棋的位置随便挑，走法也随机。
+          <br>中等：吃子前先算一步「吃完站那儿会不会挨打」，翻棋会挑旁边有自己人的位置。
+          <br>困难：把被反吃的账算得更细，也最不随机。</p>
       </div>
 
       <p class="note">

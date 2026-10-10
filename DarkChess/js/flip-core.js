@@ -274,10 +274,13 @@
   // ---------------------------------------------------------------- AI
   /** 未翻开的棋子还可能是哪些（公开信息推导：全部 32 枚 － 盘上明子 － 已吃掉的子） */
   function poolFor(g) {
-    var all = FULL.slice(), i;
-    for (i = 0; i < NSQ; i++) if (g.open[i] && g.bd[i]) all.splice(all.indexOf(g.bd[i]), 1);
+    var all = FULL.slice(), i, j;
+    for (i = 0; i < NSQ; i++) if (g.open[i] && g.bd[i]) {
+      j = all.indexOf(g.bd[i]);
+      if (j >= 0) all.splice(j, 1);          // 必须判 j >= 0：splice(-1) 会删掉最后一项
+    }
     for (i = 0; i < g.eaten.length; i++) {
-      var j = all.indexOf(g.eaten[i]);
+      j = all.indexOf(g.eaten[i]);
       if (j >= 0) all.splice(j, 1);
     }
     return all;
@@ -291,14 +294,64 @@
     return bd;
   }
 
+  /**
+   * 评估：采样棋盘上的子力差。
+   * 注意这里**不跳过暗子** —— 调用方（negamax / chooseMove）传进来的 bd
+   * 已经由 sampleBoard 给暗子填上了「从公开信息池里抽出来的身份」，
+   * 不拿它来算，采样就白采了（暗子只当挡路石子，AI 对盘面毫无概念）。
+   */
   function evalFor(bd, open, col) {
     var s = 0, i, p;
     for (i = 0; i < NSQ; i++) {
       p = bd[i];
-      if (!p || !open[i]) continue;
+      if (!p) continue;
       s += (sideOf(p) === col ? 1 : -1) * VALUE[typeOf(p)];
     }
     return s;
+  }
+
+  /**
+   * 走完这一步之后，落点上那枚子被对方明子一口吃掉的风险（返回被吃子的价值）
+   * —— 与串串香那边的 dangerAt 同源，这里按翻翻棋「大吃小」的规则实现。
+   */
+  function riskOfMove(g, mv) {
+    var mov = g.bd[mv.f];
+    if (!mov || mv.k === 0) return 0;              // 翻子：翻出来是谁还不知道，不算风险
+    var bd = g.bd.slice(), open = g.open.slice();
+    bd[mv.t] = mov; bd[mv.f] = 0; open[mv.t] = 1;
+    var myside = sideOf(mov), v = VALUE[typeOf(mov)], foe = other(myside);
+    var i, j, p, nb;
+    for (i = 0; i < NSQ; i++) {
+      p = bd[i];
+      if (!p || !open[i] || sideOf(p) !== foe) continue;
+      if (typeOf(p) === T_CAN) {
+        if (cannonTargets(bd, open, i).indexOf(mv.t) >= 0) return v;
+      } else {
+        nb = NB[i];
+        for (j = 0; j < nb.length; j++) {
+          if (nb[j] === mv.t && canCapture(p, bd[mv.t])) return v;
+        }
+      }
+    }
+    return 0;
+  }
+
+  /**
+   * 落点的位置分：挨着对方明子 = 有接触、有机会；挨着自己明子 = 有照应。
+   * 光靠子力评估的话，双方会互相绕圈、谁都不接触，一路磨到判和。
+   */
+  var DIRS4 = [[0, 1], [0, -1], [1, 0], [-1, 0]];
+  function spotScore(g, sq, me) {
+    var r0 = rowOf(sq), c0 = colOf(sq), s = 0, k, r, c, i, p;
+    for (k = 0; k < 4; k++) {
+      r = r0 + DIRS4[k][0]; c = c0 + DIRS4[k][1];
+      if (r < 0 || r >= ROWS || c < 0 || c >= COLS) continue;
+      i = idxOf(r, c); p = g.bd[i];
+      if (!p || !g.open[i]) continue;
+      if (sideOf(p) === me) s += 0.06;
+      else s += Math.min(3, VALUE[typeOf(p)]) * 0.06;
+    }
+    return Math.min(0.6, s);
   }
 
   function negamax(bd, open, col, depth, alpha, beta) {
@@ -324,10 +377,14 @@
     return best;
   }
 
+  // noise：在分数差不多的着法之间乱选的幅度
+  // flip  ：翻暗子的基准分 —— 同时也是「这口吃不吃」的门槛
+  //         （暗子只有翻开才能用，一直不翻就只能拿手上几枚子耗到和棋）
+  // risk  ：对「吃完站那儿会被反吃」的顾虑
   var LEVELS = {
-    1: { samples: 4, depth: 1, noise: 14 },
-    2: { samples: 6, depth: 2, noise: 6 },
-    3: { samples: 10, depth: 2, noise: 1.5 }
+    1: { samples: 4,  depth: 1, noise: 3.0, flip: 1.2, risk: 0.00 },
+    2: { samples: 6,  depth: 2, noise: 1.2, flip: 1.2, risk: 0.35 },
+    3: { samples: 10, depth: 2, noise: 0.4, flip: 1.2, risk: 0.45 }
   };
 
   /**
@@ -344,8 +401,29 @@
     if (me == null) return moves[(rng() * moves.length) | 0];
 
     var cfg = LEVELS[level] || LEVELS[2];
-    var acc = new Float64Array(moves.length), s, m, mv, n, sc, bd;
+    var m, mv, v, n, sc, bd, s, q, tac, noise;
 
+    // 局面越僵越不能挑食：久无吃子 / 翻子时把「怕被反吃」放松下来。
+    // 否则双方都躲着换子，会一路耗到 70 手判和 —— 看着就是在磨棋。
+    var effRisk = cfg.risk * (1 - Math.min(0.7, (g.quiet || 0) / 60));
+
+    // 每一步「站上去会被对方反吃」的风险，只算一次
+    var risk = new Float64Array(moves.length);
+    for (m = 0; m < moves.length; m++) risk[m] = riskOfMove(g, moves[m]);
+
+    // ---- 一、不吃亏又能吃到的子：直接吃，不给随机留空子 ----
+    var eatBest = -Infinity, eatPool = [];
+    for (m = 0; m < moves.length; m++) {
+      mv = moves[m];
+      if (mv.k !== 2) continue;
+      v = VALUE[typeOf(g.bd[mv.t])] - risk[m] * effRisk;
+      if (v > eatBest + 1e-9) { eatBest = v; eatPool = [mv]; }
+      else if (v > eatBest - 1e-9) eatPool.push(mv);
+    }
+    if (eatPool.length && eatBest >= cfg.flip) return eatPool[(rng() * eatPool.length) | 0];
+
+    // ---- 二、其余着法交给采样搜索排序 ----
+    var acc = new Float64Array(moves.length);
     for (s = 0; s < cfg.samples; s++) {
       bd = sampleBoard(g, rng);
       for (m = 0; m < moves.length; m++) {
@@ -357,10 +435,26 @@
       }
     }
 
-    var best = null, bestSc = -INF;
+    var best = null, bestSc = -Infinity;
     for (m = 0; m < moves.length; m++) {
-      var v = acc[m] / cfg.samples + (rng() - 0.5) * cfg.noise;
-      if (v > bestSc) { bestSc = v; best = moves[m]; }
+      mv = moves[m];
+      if (mv.k === 2) {
+        // 走到这儿说明这口吃得不划算（否则第一步就吃了），但还是比瞎挪强
+        tac = VALUE[typeOf(g.bd[mv.t])] - risk[m] * effRisk;
+        noise = Math.min(cfg.noise * 0.25, 0.5);
+      } else if (mv.k === 0) {
+        tac = cfg.flip + spotScore(g, mv.f, me) * 0.5;
+        noise = cfg.noise;
+      } else {
+        tac = -0.5 + spotScore(g, mv.t, me) - risk[m] * effRisk * 0.5;
+        noise = cfg.noise;
+      }
+      // 搜索分只用来在「同一类着法」内部比高下，量级压到 ±1.5，
+      // 免得子力差（±33）把上面的战术分整个淹掉
+      q = acc[m] / cfg.samples * 0.08;
+      if (q > 1.5) q = 1.5; else if (q < -1.5) q = -1.5;
+      v = tac + q + (rng() - 0.5) * noise;
+      if (v > bestSc) { bestSc = v; best = mv; }
     }
     return best;
   }
@@ -378,6 +472,7 @@
     createGame: createGame, legalMoves: legalMoves, doMove: doMove, undo: undo,
     checkEnd: checkEnd, aliveCount: aliveCount, stateKey: stateKey,
     poolFor: poolFor, sampleBoard: sampleBoard, evalFor: evalFor,
+    riskOfMove: riskOfMove, spotScore: spotScore,
     chooseMove: chooseMove, LEVELS: LEVELS
   };
 })(typeof window !== 'undefined' ? window : globalThis);

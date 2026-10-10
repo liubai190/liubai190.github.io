@@ -134,11 +134,12 @@
       ctx.restore();
     }
 
-    // 棋子
+    // 棋子。终局后全部亮牌 —— 暗子不能被吃，所以只剩暗子的那一方必是胜方，
+    // 亮开才看得出来「败方确实一枚不剩」，不然看着像判错了
     for (i = 0; i < NSQ; i++) {
       p = g.bd[i];
       if (!p) continue;
-      if (!g.open[i]) drawImg(backImg, X(i), Y(i), PIECE);
+      if (!g.open[i] && !over) drawImg(backImg, X(i), Y(i), PIECE);
       else drawImg(imgs[FQ.pieceName(p)], X(i), Y(i), PIECE);
     }
 
@@ -188,12 +189,14 @@
               : '同一局面重复';
       return '和棋 —— ' + why;
     }
+    // 输赢措辞要跟着「谁被吃光 / 谁走不动」走，别一律写「对方」
     var myColor = g.seatColor[0];
-    var line;
-    if (mode === 'pve') line = (r.winColor === myColor) ? '你赢了' : '你输了';
-    else line = colorName(r.winColor) + '方胜';
-    var why2 = r.reason === 'nomove' ? '对方无棋可走' : '对方棋子被吃光';
-    return line + ' —— ' + why2;
+    var why2 = r.reason === 'nomove' ? '无棋可走' : '棋子被吃光';
+    if (mode === 'pve') {
+      var iWin = (r.winColor === myColor);
+      return (iWin ? '你赢了' : '你输了') + ' —— ' + (iWin ? '对方' : '你的') + why2;
+    }
+    return colorName(r.winColor) + '方胜 —— ' + colorName(1 - r.winColor) + '方' + why2;
   }
 
   function render() {
@@ -229,7 +232,7 @@
     var pieces = [
       '<span class="side s-red">红 ' + n[FQ.RED] + '</span>',
       '<span class="side s-black">黑 ' + n[FQ.BLACK] + '</span>',
-      '<span class="side">暗子 ' + hidden + '</span>'
+      '<span class="side">暗子 ' + hidden + (g.result && hidden ? '（已亮出）' : '') + '</span>'
     ];
     if (g.seatColor[0] != null && mode === 'pve') {
       pieces.unshift('<span class="side' + (g.turn === 0 ? ' now' : '') + '">你执' +
@@ -245,6 +248,11 @@
       if (g.last.k === 0) lt = who + ' 翻开 ' + FQ.pieceText(g.last.piece);
       else if (g.last.cap) lt = who + ' 用 ' + FQ.pieceText(g.last.piece) + ' 吃掉 ' + FQ.pieceText(g.last.cap);
       else lt = who + ' ' + FQ.pieceText(g.last.piece) + ' 走一格';
+    }
+    if (g.result && !g.result.draw) {
+      lt = hidden
+        ? '结算：' + hidden + ' 枚暗子已亮出 —— 暗子不能被吃，盘上留着暗子的必是胜方，败方确实一枚不剩'
+        : '结算：盘上没有剩下的暗子，败方一枚不剩';
     }
     elMeta.textContent = lt || '尚未落子';
 
@@ -476,6 +484,7 @@
       elHint.checked = !!v;
       elHint.dispatchEvent(new Event('change'));
     },
+    setOver: function (v) { over = !!v; draw(); render(); },
     hover: function (i) {
       hoverSq = -1; hoverArr = [];
       if (i >= 0 && hintOn && sel < 0 && humanCanAct()) {

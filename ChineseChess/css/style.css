@@ -47,9 +47,9 @@ body::before {
 .wrap {
   position: relative;
   z-index: 1;
-  max-width: 1000px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 30px 24px 54px;
+  padding: 26px 24px 54px;
 }
 
 /* ---------- 页头 ---------- */
@@ -88,18 +88,19 @@ body::before {
   letter-spacing: .04em;
 }
 
-/* ---------- 布局 ---------- */
-.game { display: flex; gap: 30px; align-items: flex-start; }
+/* ---------- 布局：棋盘居中，面板在下（与 /chess4/ /ChessChess/ /DarkChess/ 一致） ---------- */
+.game { display: block; }
 
 .board-box {
   position: relative;
-  flex: 0 0 auto;
   line-height: 0;
+  margin: 0 auto;
+  width: fit-content;
 }
 #board { display: block; cursor: pointer; }
 
-/* ---------- 右侧面板 ---------- */
-.panel { flex: 1 1 auto; min-width: 190px; padding-top: 4px; }
+/* ---------- 下方面板 ---------- */
+.panel { margin-top: 18px; }
 
 .status {
   font-size: 15px;
@@ -109,7 +110,7 @@ body::before {
   border: 1px solid var(--hair);
   border-radius: 4px;
   background: var(--card);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   min-height: 40px;
   text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
 }
@@ -137,14 +138,28 @@ body::before {
   margin-bottom: 8px;
 }
 
+/* 横向铺开的五组控件 */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 34px;
+  align-items: flex-start;
+}
+.row .field { flex: 0 0 auto; margin: 0; }
+.row .field .label {
+  font-size: 12px;
+  color: var(--mute);
+  letter-spacing: .14em;
+  margin-bottom: 7px;
+}
+
 /* 双人档下「难度」不起作用：整块压暗并停掉点击，别让人以为能调 */
 .field.dim { opacity: .40; }
 .field.dim .seg button { pointer-events: none; cursor: default; }
 
 .seg { display: flex; border: 1px solid var(--hair); border-radius: 4px; overflow: hidden; }
 .seg button {
-  flex: 1 1 0;
-  padding: 7px 0;
+  padding: 7px 18px;
   font-size: 13.5px;
   font-family: inherit;
   color: var(--cream2);
@@ -165,8 +180,7 @@ body::before {
 
 .btns { display: flex; gap: 10px; }
 .btns button {
-  flex: 1 1 0;
-  padding: 9px 0;
+  padding: 8px 20px;
   font-size: 13.5px;
   font-family: inherit;
   color: var(--cream2);
@@ -184,10 +198,7 @@ body::before {
   border-color: rgba(224, 179, 84, .20);
 }
 
-.toggles { margin-bottom: 16px; }
-.toggles .toggle { margin-bottom: 7px; }
-.toggles .toggle:last-child { margin-bottom: 0; }
-
+.toggles { display: flex; gap: 18px; }
 .toggle {
   display: flex;
   align-items: center;
@@ -196,20 +207,19 @@ body::before {
   color: var(--cream2);
   cursor: pointer;
   user-select: none;
-  margin-bottom: 16px;
 }
 .toggle input { accent-color: var(--gold-d); width: 15px; height: 15px; }
 .toggle:hover { color: var(--cream); }
 
-.meta { font-size: 13px; color: var(--mute); margin-bottom: 20px; }
+.meta { font-size: 13.5px; color: var(--mute); padding-top: 5px; }
 
 .note {
   font-size: 12px;
-  line-height: 1.8;
+  line-height: 1.85;
   color: var(--mute);
   border-top: 1px solid rgba(224, 179, 84, .22);
   padding-top: 14px;
-  margin: 0;
+  margin: 18px 0 0;
 }
 .note strong { color: var(--cream2); font-weight: 600; }
 .note .credit { display: block; margin-top: 8px; color: #9b8468; }

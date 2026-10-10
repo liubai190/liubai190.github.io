@@ -18,7 +18,7 @@
   var W = 964, H = 548;
 
   function X(i) { return X0 + CCX.colOf(i) * SPACE; }
-  function Y(i) { return Y0 + (CCX.rowOf(i) + 1) * SPACE; }
+  function Y(i) { return Y0 + CCX.rowOf(i) * SPACE; }
 
   var DELAYS = [0.8, 1.5, 2.5, 4];
   var DEFAULT_DELAY = 1.5;
@@ -129,11 +129,12 @@
 
     var i, p;
 
-    // 棋子
+    // 棋子。终局后全部亮牌 —— 否则「对方被吃光了，怎么还扣着一堆子」看着像 bug：
+    // 暗子不能被吃，所以被吃光的一方能剩子，剩下的必是胜方自己的。
     for (i = 0; i < NSQ; i++) {
       p = g.bd[i];
       if (!p) continue;
-      if (!g.open[i]) drawImg(backImg, X(i), Y(i), PIECE);
+      if (!g.open[i] && !over) drawImg(backImg, X(i), Y(i), PIECE);
       else drawImg(imgs[CCX.pieceName(p)], X(i), Y(i), PIECE);
     }
 
@@ -258,7 +259,7 @@
     var pieces = [
       '<span class="side s-red">红 ' + n[CCX.RED] + '</span>',
       '<span class="side s-black">黑 ' + n[CCX.BLACK] + '</span>',
-      '<span class="side">暗子 ' + hidden + '</span>'
+      '<span class="side">暗子 ' + hidden + (g.result && hidden ? '（已亮出）' : '') + '</span>'
     ];
     if (g.seatColor[0] != null && mode === 'pve') {
       pieces.unshift('<span class="side' + (g.turn === 0 ? ' now' : '') + '">你执' +
@@ -266,7 +267,7 @@
     }
     elSides.innerHTML = pieces.join('');
 
-    // 上一手摘要
+    // 上一手摘要（终局时改成结算说明）
     var lt = '';
     if (g.last) {
       var who = seatName(g.last.seat);
@@ -275,7 +276,14 @@
         var names = g.last.caps.map(function (x) { return CCX.pieceText(x); });
         lt = who + ' 用 ' + CCX.pieceText(g.last.piece) + ' 吃掉 ' + names.join(' + ') +
              (names.length > 1 ? '（连吃 ' + names.length + ' 个）' : '');
-      } else lt = who + ' ' + CCX.pieceText(g.last.piece) + ' 走到河沿';
+      } else lt = who + ' ' + CCX.pieceText(g.last.piece) + ' 挪了一步';
+    }
+    if (g.result && !g.result.draw) {
+      // 把「为什么还剩一堆暗子却已经分出胜负」讲明白，免得看着像判错了
+      lt = hidden
+        ? '结算：败方一枚不剩（' + hidden + ' 枚暗子已亮出 —— 暗子不能被吃，' +
+          '所以留在盘上的暗子只可能属于胜方）'
+        : '结算：败方一枚不剩，盘上没有剩下的暗子';
     }
     elMeta.textContent = lt || '尚未落子';
 
@@ -436,7 +444,7 @@
       var x = (e.clientX - rect.left) / viewScale;
       var y = (e.clientY - rect.top) / viewScale;
       var c = Math.round((x - X0) / SPACE);
-      var r = Math.round((y - (Y0 + SPACE)) / SPACE);
+      var r = Math.round((y - Y0) / SPACE);
       if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return -1;
       return r * COLS + c;
     }
@@ -515,6 +523,7 @@
     isHumanTurn: humanCanAct,
     isOver: function () { return over; },
     setHint: function (v) { elHint.checked = !!v; elHint.dispatchEvent(new Event('change')); },
+    setOver: function (v) { over = !!v; draw(); render(); },
     hover: function (i) { hoverPreview(i); draw(); },
     dbg: function () {
       var nc = 0, k;

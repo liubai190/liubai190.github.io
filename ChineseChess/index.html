@@ -11,7 +11,7 @@
 <div class="wrap">
   <header class="head">
     <span class="topnav">
-      <a href="/chess/">← 棋</a>
+      <a href="/chess/">← 象棋</a>
       <a href="/">灰木</a>
     </span>
     <h1>中国象棋</h1>
@@ -23,41 +23,47 @@
       <canvas id="board"></canvas>
     </div>
 
-    <aside class="panel">
+    <div class="panel">
       <div class="status" id="status">轮到你走</div>
 
-      <div class="field">
-        <div class="label">模式</div>
-        <div class="seg" id="modes">
-          <button type="button" data-mode="pve" class="on">人机</button>
-          <button type="button" data-mode="pvp">双人</button>
+      <div class="row">
+        <div class="field">
+          <div class="label">模式</div>
+          <div class="seg" id="modes">
+            <button type="button" data-mode="pve" class="on">人机</button>
+            <button type="button" data-mode="pvp">双人</button>
+          </div>
         </div>
-      </div>
 
-      <div class="field" id="levelField">
-        <div class="label">难度</div>
-        <div class="seg" id="levels">
-          <button type="button" data-level="2">简单</button>
-          <button type="button" data-level="4" class="on">中级</button>
-          <button type="button" data-level="6">高手</button>
+        <div class="field" id="levelField">
+          <div class="label">难度</div>
+          <div class="seg" id="levels">
+            <button type="button" data-level="2">简单</button>
+            <button type="button" data-level="4" class="on">中级</button>
+            <button type="button" data-level="6">高手</button>
+          </div>
         </div>
-      </div>
 
-      <div class="field">
-        <div class="label">操作</div>
-        <div class="btns">
-          <button type="button" id="undo">悔棋</button>
-          <button type="button" id="restart">重新开始</button>
+        <div class="field">
+          <div class="label">操作</div>
+          <div class="btns">
+            <button type="button" id="undo">悔棋</button>
+            <button type="button" id="restart">重新开始</button>
+          </div>
         </div>
-      </div>
 
-      <div class="toggles">
-        <label class="toggle"><input type="checkbox" id="dots"> 走法提示</label>
-        <label class="toggle"><input type="checkbox" id="sound" checked> 音效</label>
-      </div>
+        <div class="field">
+          <div class="label">选项</div>
+          <div class="toggles">
+            <label class="toggle"><input type="checkbox" id="dots"> 走法提示</label>
+            <label class="toggle"><input type="checkbox" id="sound" checked> 音效</label>
+          </div>
+        </div>
 
-      <div class="meta">
-        <span id="plies">第 0 手</span>
+        <div class="field">
+          <div class="label">进程</div>
+          <div class="meta"><span id="plies">第 0 手</span></div>
+        </div>
       </div>
 
       <p class="note">
@@ -70,7 +76,7 @@
           如权利人认为不妥，请联系本站即刻移除。
         </span>
       </p>
-    </aside>
+    </div>
   </div>
 </div>
 

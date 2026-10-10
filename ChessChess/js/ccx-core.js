@@ -2,8 +2,9 @@
  * ccx-core.js —— 串串香 规则引擎
  *
  * 棋盘：线沿用翻棋盘那 9 竖 x 5 横
- *       棋子摆在**线的交点**上：8 列 x 4 行 = 32 个点，32 枚棋子正好铺满
- *       最上面那条横线、最右边那条竖线留空
+ *       棋子摆在**线的交点**上：9 列 x 5 行 = 45 个点，**45 个点全部可落子**
+ *       开局 32 枚铺在内圈的 32 个点（第 1~8 竖线 x 第 2~5 横线）
+ *       —— 最上面那条横线、最右边那条竖线开局留空，但照样能走上去、能在上面吃子
  *
  * 玩法（白 2026-10-10 口述确认）：
  *   1. 暗棋机制：全扣着开局，第一枚翻出的颜色归翻子的人；扣着的子不能被吃
@@ -20,7 +21,8 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var COLS = 8, ROWS = 4, N = COLS * ROWS;
+  var COLS = 9, ROWS = 5, N = COLS * ROWS;        // 9 竖 x 5 横 = 45 个交点，全是有效落子点
+  var SEAT_COLS = 8, SEAT_ROW0 = 1;               // 开局铺子区：第 1~8 竖线 x 第 2~5 横线 = 32 点
   var RED = 0, BLACK = 1;
 
   // 每方的子力
@@ -56,7 +58,8 @@
   // ---------------------------------------------------------------- 开局
   function createGame(rnd) {
     rnd = rnd || Math.random;
-    var bag = [], i, k, a;
+    var bag = [], cells = [], i, k, a, r, c;
+
     for (i = 0; i < ARMY.length; i++) {
       a = ARMY[i];
       for (k = 0; k < a[1]; k++) {
@@ -64,13 +67,19 @@
         bag.push({ s: BLACK, t: a[0] });
       }
     }
-    // 32 枚洗牌铺满 32 个点
-    for (i = bag.length - 1; i > 0; i--) {
+    for (i = bag.length - 1; i > 0; i--) {          // 32 枚洗牌
       k = (rnd() * (i + 1)) | 0;
       var tmp = bag[i]; bag[i] = bag[k]; bag[k] = tmp;
     }
+    // 铺在内圈那 32 个点：最上一横线、最右一竖线开局留空（空点可走上去、可在上面吃子）
+    for (r = SEAT_ROW0; r < ROWS; r++) {
+      for (c = 0; c < SEAT_COLS; c++) cells.push(idx(c, r));
+    }
+    var bd = new Array(N).fill(null);
+    for (i = 0; i < cells.length; i++) bd[cells[i]] = bag[i];
+
     return {
-      bd: bag,
+      bd: bd,
       open: new Array(N).fill(false),
       seatColor: [null, null],
       turn: 0,
@@ -294,7 +303,9 @@
     if (n[RED] === 0) { g.result = { draw: false, winColor: BLACK, reason: 'eaten' }; return g.result; }
     if (n[BLACK] === 0) { g.result = { draw: false, winColor: RED, reason: 'eaten' }; return g.result; }
     if (legalMoves(g).length === 0) {
-      g.result = { draw: false, winColor: g.seatColor[g.turn], reason: 'nomove' };
+      // 轮到自己却无棋可走 = 自己判负，赢的是对手那一边的颜色
+      // （早先写成了 seatColor[g.turn]，把输的一方当成了赢家）
+      g.result = { draw: false, winColor: g.seatColor[1 - g.turn], reason: 'nomove' };
       return g.result;
     }
     if (g.quiet >= QUIET_LIMIT) { g.result = { draw: true, reason: 'quiet' }; return g.result; }
@@ -347,6 +358,65 @@
     return worst;
   }
 
+  // ---- 位置启发（只给 AI 用，不参与规则判定） ------------------------------
+  // 站在 sq 上的那枚子，会被对方哪个明子一口吃掉 —— 返回最大的那份价值（只看单步）
+  function dangerAt(g, sq, me) {
+    var p0 = g.bd[sq];
+    if (!p0) return 0;
+    var v = VAL[p0.t] || 1, i, p, t, j, hit;
+    for (i = 0; i < N; i++) {
+      p = g.bd[i];
+      if (!p || !g.open[i] || p.s === me) continue;
+      t = biteTargets(g, i, p);
+      hit = false;
+      for (j = 0; j < t.length; j++) if (t[j] === sq) { hit = true; break; }
+      if (hit) return v;                     // 已经被盯上了，问「多少个」没有意义
+    }
+    return 0;
+  }
+
+  // 走完这一步之后，落点上那枚子挨打的风险
+  function riskAfter(g, mv, me) {
+    return withMove(g, mv, function (gg) { return dangerAt(gg, mv.t, me); });
+  }
+
+  // 走完这一步之后，新位置能威胁到对方多少（封顶，免得一条长线把权重全吃掉）
+  function attackAfter(g, mv, me) {
+    return withMove(g, mv, function (gg) {
+      var p = gg.bd[mv.t];
+      if (!p) return 0;
+      var t = biteTargets(gg, mv.t, p), v = 0, i, q;
+      for (i = 0; i < t.length; i++) {
+        q = gg.bd[t[i]];
+        v += Math.min(3, VAL[q.t] || 1) * 0.12;
+      }
+      return Math.min(0.6, v);
+    });
+  }
+
+  // 这个位置适合翻吗：旁边有自己的明子（翻出敌子能顺手吃）加分，
+  // 旁边有对方的大子（翻出自己的子会被吃）减分
+  function flipSpot(g, sq, me) {
+    var c0 = colOf(sq), r0 = rowOf(sq), k, c, r, i, q, mine = 0, foe = 0;
+    for (k = 0; k < 4; k++) {
+      c = c0 + D4[k][0]; r = r0 + D4[k][1];
+      if (!inB(c, r)) continue;
+      i = idx(c, r); q = g.bd[i];
+      if (!q || !g.open[i]) continue;
+      if (q.s === me) mine++;
+      else if ((VAL[q.t] || 1) >= 4) foe++;
+    }
+    return Math.min(3, mine) * 0.16 - Math.min(2, foe) * 0.28;
+  }
+
+  // 三档难度共用的着法权重。关键一条：**翻子是有正价值的** ——
+  // 扣着的子只有翻开才能用，不翻就只能拿手上那几枚明子耗。
+  var EAT_BONUS = 0.35;                  // 吃子的确定性加成：摆在嘴边的子一定要吃
+  var FLIP_BONUS = 0.90;                 // 翻子的基准分（≈ 一枚兵的价值）
+  var WALK_PENALTY = 0.25;               // 什么都不干的挪子，天然排最后
+  var RISK_W = [0, 0.35, 0.60];          // 简单 / 中等 / 困难：「吃完会被反吃」的顾虑
+  var NOISE = [0.55, 0.22, 0];           // 简单 / 中等 / 困难：在「差不太多」的着法里乱选的幅度
+
   function chooseMove(g, level, rnd) {
     rnd = rnd || Math.random;
     var moves = legalMoves(g);
@@ -354,31 +424,38 @@
     if (moves.length === 1) return moves[0];
 
     var me = g.seatColor[g.turn];
-    if (me == null) return moves[(rnd() * moves.length) | 0];      // 开局只能翻，随机
+    if (me == null) return moves[(rnd() * moves.length) | 0];   // 还没定色，只能翻，位置无差别
 
-    var i, mv, v, best = [], bestV = -Infinity;
-
-    if (level <= 1) {
-      // 简单：大多随机，有机会吃子时常常会吃
-      var eats = [];
-      for (i = 0; i < moves.length; i++) if (moves[i].k === 2) eats.push(moves[i]);
-      if (eats.length && rnd() < 0.55) {
-        eats.sort(function (a, b) { return capsValue(b.caps) - capsValue(a.caps); });
-        return eats[Math.min(eats.length - 1, (rnd() * 2) | 0)];
-      }
-      return moves[(rnd() * moves.length) | 0];
-    }
+    var L = Math.max(1, Math.min(3, level | 0)) - 1;
+    var i, mv, sc, scores = new Array(moves.length), best = [], bestV = -Infinity;
 
     for (i = 0; i < moves.length; i++) {
       mv = moves[i];
-      v = withMove(g, mv, function (gg) {
-        var sc = evaluate(gg, me);
-        if (mv.k === 0) sc -= 0.4;                       // 翻子有一点信息代价
-        if (level >= 3) sc -= worstBite(gg, me) * 0.75;  // 别把子送到人家嘴边
-        return sc;
-      });
-      if (v > bestV + 1e-6) { bestV = v; best = [mv]; }
-      else if (v > bestV - 1e-6) best.push(mv);
+      if (mv.k === 2) {
+        // 吃子：吃到手的价值 − 站上去之后被人家反吃的风险
+        sc = capsValue(mv.caps) - riskAfter(g, mv, me) * RISK_W[L] + EAT_BONUS;
+      } else if (mv.k === 0) {
+        // 翻子：恒定正收益（简单档不看位置，所以乱翻）
+        sc = FLIP_BONUS + (L > 0 ? flipSpot(g, mv.f, me) : 0);
+      } else {
+        // 走空：只有在没有暗子可翻的时候才轮得到它
+        sc = (L > 0 ? attackAfter(g, mv, me) - riskAfter(g, mv, me) * RISK_W[L] : 0)
+             - WALK_PENALTY;
+      }
+      scores[i] = sc;
+      if (sc > bestV) { bestV = sc; best = [mv]; }
+      else if (sc > bestV - 1e-9) best.push(mv);
+    }
+
+    // 最优解是吃子 -> 不做任何随机（这就是「有吃必吃」）
+    for (i = 0; i < best.length; i++) if (best[i].k === 2) return best[(rnd() * best.length) | 0];
+
+    // 其余情况：在「离最优不差太多」的一堆着法里挑（难度差异就在这个窗口的宽窄上）
+    var tol = NOISE[L];
+    if (tol > 0) {
+      var cand = [];
+      for (i = 0; i < moves.length; i++) if (scores[i] >= bestV - tol) cand.push(moves[i]);
+      if (cand.length) return cand[(rnd() * cand.length) | 0];
     }
     return best[(rnd() * best.length) | 0];
   }
@@ -393,6 +470,9 @@
     moveTargets: moveTargets, biteTargets: biteTargets, chainCaptures: chainCaptures,
     doMove: doMove, applyMove: applyMove, undo: undo, snapshot: snapshot,
     checkResult: checkResult, aliveCount: aliveCount,
-    evaluate: evaluate, capsValue: capsValue, chooseMove: chooseMove
+    evaluate: evaluate, capsValue: capsValue, chooseMove: chooseMove,
+    dangerAt: dangerAt, riskAfter: riskAfter, attackAfter: attackAfter, flipSpot: flipSpot,
+    AI: { EAT_BONUS: EAT_BONUS, FLIP_BONUS: FLIP_BONUS, WALK_PENALTY: WALK_PENALTY,
+          RISK_W: RISK_W, NOISE: NOISE }
   };
 });
