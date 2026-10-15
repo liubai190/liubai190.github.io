@@ -57,6 +57,7 @@
   // ------------------------------------------------------------ DOM
   function $(id) { return document.getElementById(id); }
   var canvas, ctx, elStatus, elLevels, elUndo, elMeta, elSides, elDelay;
+  var elAIPick, elLevelField, elDelayField;
   var imgs = {}, boardImg = null;
   var soundOn = true, snd = {};
   var showDots = false;       // 「走法提示」开关，默认关（与上一版一致）
@@ -65,6 +66,27 @@
 
   // ------------------------------------------------------------ 状态
   var st = null;
+
+  // ---------------------------------------------- 电脑参与方（2026-10-15 新增）
+  // aiFlags[s] === true：第 s 方由电脑操控；false：真人（同机轮流操作）。
+  // 默认 [红=人, 黑=电脑, 青=电脑, 蓝=电脑]，与上一版行为完全一致。
+  // 可以勾 0~3 方电脑，也就是 4 / 3 / 2 / 1 人同机都能玩。
+  // 不允许四方全勾成电脑 —— 那样就没人操作了（至少留一方真人）。
+  //
+  // 「你」这个称呼只在恰好一个真人时用；两个以上真人同机时一律按颜色叫，
+  // 免得一方走完弹个「轮到你走」让另一个人误会。
+  var aiFlags = [false, true, true, true];
+  function isAI(s) { return !!aiFlags[s]; }
+  function humanCount() {
+    var n = 0;
+    for (var i = 0; i < 4; i++) if (!aiFlags[i]) n++;
+    return n;
+  }
+  function aiCount() {
+    var n = 0;
+    for (var i = 0; i < 4; i++) if (aiFlags[i]) n++;
+    return n;
+  }
 
   function newState() {
     var bd = G.initialBoard(), mvf = new Int8Array(G.NSQ);
@@ -263,16 +285,23 @@
 
   // ------------------------------------------------------------ 界面文案
   function setStatus() {
-    var t, cls = '';
+    var t, cls = '', solo = (humanCount() === 1);
     if (st.over) { t = st.overText; cls = 'over'; }
     else if (st.hint) { t = st.hint; cls = 'hint'; }
     else if (st.busy) { t = SIDE_TXT[st.turn] + '方思考中'; cls = 'busy'; }
-    else if (st.turn === G.RED) {
-      t = '轮到你走（红）';
-      if (G.inCheck(st.bd, G.RED)) t = '你被将军了！' + t;
-    } else {
-      t = SIDE_TXT[st.turn] + '方走棋';
-      if (G.inCheck(st.bd, st.turn)) t = SIDE_TXT[st.turn] + '方被将军';
+    else {
+      var nm = SIDE_TXT[st.turn], chk = G.inCheck(st.bd, st.turn);
+      if (isAI(st.turn)) {
+        t = nm + '方走棋';
+        if (chk) t = nm + '方被将军';
+      } else if (solo) {
+        t = '轮到你走（' + nm + '）';
+        if (chk) t = '你被将军了！' + t;
+      } else {
+        // 两个以上真人同机：不能说「你」，按颜色喊
+        t = '轮到' + nm + '方走';
+        if (chk) t = '轮到' + nm + '方走（被将军）';
+      }
     }
     elStatus.textContent = t;
     elStatus.className = 'status' + (cls ? ' ' + cls : '');
@@ -287,7 +316,8 @@
       var cl = 'side s' + i;
       if (!st.alive[i]) cl += ' dead';
       if (!st.over && st.alive[i] && st.turn === i) cl += ' now';
-      html += '<span class="' + cl + '">' + SIDE_TXT[i] + (i === G.RED ? '（你）' : '') + '</span>';
+      var tag = isAI(i) ? '<i class="ai">电脑</i>' : (solo ? '（你）' : '');
+      html += '<span class="' + cl + '">' + SIDE_TXT[i] + tag + '</span>';
     }
     elSides.innerHTML = html;
   }
@@ -319,13 +349,14 @@
   }
 
   // ------------------------------------------------------------ 选子 / 走子
+  // 着法按「当前该走的那一方」生成 —— 人机混排时当前方不一定是红方
   function legalFrom(sq) {
-    var all = G.legalMoves(st.bd, st.mvf, G.RED), out = [];
+    var all = G.legalMoves(st.bd, st.mvf, st.turn), out = [];
     for (var i = 0; i < all.length; i++) if (G.moveFrom(all[i]) === sq) out.push(G.moveTo(all[i]));
     return out;
   }
   function blockedFrom(sq) {
-    var all = G.blockedByRule(st.bd, st.mvf, G.RED), out = [];
+    var all = G.blockedByRule(st.bd, st.mvf, st.turn), out = [];
     for (var i = 0; i < all.length; i++) if (G.moveFrom(all[i]) === sq) out.push(G.moveTo(all[i]));
     return out;
   }
@@ -390,15 +421,29 @@
     var guard = 0;
     while (!st.alive[st.turn] && guard++ < 4) st.turn = G.NEXT[st.turn];
 
-    if (!st.alive[G.RED]) {
+    var solo = (humanCount() === 1), i;
+    var alive = [], humansIn = [];
+    for (i = 0; i < 4; i++) {
+      if (!st.alive[i]) continue;
+      alive.push(i);
+      if (!isAI(i)) humansIn.push(i);
+    }
+
+    // 真人全部出局：对这一局来说已经结束（剩下几个电脑互掐也没人操作了）
+    if (!humansIn.length) {
       st.over = true;
-      st.overText = aliveCount() <= 1 ? '红方出局，' + SIDE_TXT[st.turn] + '方胜' : '红方出局（你已出局）';
+      st.overText = alive.length <= 1
+        ? SIDE_TXT[alive[0]] + '方胜（' + (solo ? '你已出局' : '真人全部出局') + '）'
+        : (solo ? '你出局了' : '真人全部出局，剩下三方是电脑');
       setStatus(); play('lose'); draw();
       return;
     }
-    if (aliveCount() <= 1) {
+    // 只剩一方 —— 前面已排除「真人全灭」，所以存活的那一方一定是真人
+    if (alive.length <= 1) {
       st.over = true;
-      st.overText = '你赢了！（四方仅存红方）';
+      st.overText = solo
+        ? '你赢了！（四方仅存' + SIDE_TXT[alive[0]] + '方）'
+        : SIDE_TXT[alive[0]] + '方胜（真人）';
       setStatus(); play('win'); draw();
       return;
     }
@@ -408,7 +453,7 @@
     }
     if (G.inCheck(st.bd, st.turn)) play('check');
     setStatus(); draw();
-    if (st.turn !== G.RED) scheduleAI();
+    if (isAI(st.turn)) scheduleAI();
   }
 
   function scheduleAI() {
@@ -459,12 +504,12 @@
 
   function onClick(ev) {
     if (st.over || st.busy || st.anim) return;
-    if (st.turn !== G.RED) return;
+    if (isAI(st.turn)) return;                  // 轮到电脑，等着就行
     var sq = hit(ev);
     if (sq < 0) { if (st.sel >= 0) select(-1); return; }
     var p = st.bd[sq];
 
-    if (p && G.sideOf(p) === G.RED) {
+    if (p && G.sideOf(p) === st.turn) {         // 只有当前该走那一方的子能选
       if (st.sel === sq) { select(-1); return; }
       select(sq); play('select');
       return;
@@ -487,12 +532,19 @@
     cancelAI();
     st = newState();
     tick(); setStatus();
+    kickoff();
+  }
+
+  /** 开局（或重开）后，如果第一个该走的是电脑，得主动把它踢起来 —— 没人「走完一步」就没人触发 afterMove */
+  function kickoff() {
+    if (st && !st.over && !st.anim && isAI(st.turn)) scheduleAI();
   }
 
   function undo() {
     if (st.anim || !st.hist.length) return;
     cancelAI();                       // 电脑还在等节奏的话，先把它的计时器撤掉
     st.over = false; st.overText = ''; st.hint = '';
+    // 一路退到「轮到真人」为止：三家电脑时退三步，四人同机时退一步
     var guard = 0;
     do {
       var h = st.hist.pop();
@@ -506,7 +558,7 @@
       G.unmakeMove(st.bd, st.mvf, h.mv, h.u);
       st.keys.pop();
       st.turn = h.turn;
-    } while (st.turn !== G.RED && ++guard < 6);
+    } while (isAI(st.turn) && ++guard < 10);
 
     st.sel = -1; st.ps = []; st.blocked = [];
     var last = st.hist[st.hist.length - 1];
@@ -531,6 +583,58 @@
     }
   }
 
+  // ------------------------------------------------- 电脑参与方（勾选四方）
+  /** 状态栏临时提示，几秒后自己撤掉（不打断其它状态） */
+  var warnTimer = 0;
+  function warn(msg) {
+    if (!st) return;
+    st.hint = msg;
+    setStatus();
+    if (warnTimer) window.clearTimeout(warnTimer);
+    warnTimer = window.setTimeout(function () {
+      warnTimer = 0;
+      if (st && st.hint === msg) { st.hint = ''; setStatus(); }
+    }, 3000);
+  }
+
+  /** 把「电脑方」那一排勾选框同步成 aiFlags 的样子 */
+  function syncAIPicker() {
+    if (!elAIPick) return;
+    var bs = elAIPick.getElementsByTagName('input');
+    for (var i = 0; i < bs.length; i++) {
+      bs[i].checked = !!aiFlags[+bs[i].getAttribute('data-side')];
+    }
+  }
+
+  /** 一方电脑都没有时，「难度」「电脑间隔」留着也没用 —— 压暗并禁用 */
+  function updateAIFields() {
+    var none = (aiCount() === 0);
+    if (elLevelField) elLevelField.className = 'field' + (none ? ' off' : '');
+    if (elDelayField) elDelayField.className = 'field' + (none ? ' off' : '');
+  }
+
+  /**
+   * 勾 / 取消某一方由电脑操控。返回是否真的改了。
+   * 改完**立刻生效、不重开棋局**：变更后若轮到电脑就开走，轮到真人就等着点。
+   */
+  function setAI(side, on) {
+    on = !!on;
+    if (aiFlags[side] === on) { syncAIPicker(); return true; }
+    if (on && aiCount() >= 3) {
+      syncAIPicker();                    // 把刚勾上的那个退回去
+      warn('电脑最多勾 3 方 —— 至少要留一方真人来操作');
+      return false;
+    }
+    cancelAI();                          // 撤掉可能正等着的电脑计时器
+    aiFlags[side] = on;
+    syncAIPicker();
+    updateAIFields();
+    if (st.over || st.anim) { setStatus(); draw(); return true; }
+    if (isAI(st.turn)) scheduleAI();
+    else { setStatus(); draw(); }
+    return true;
+  }
+
   // ------------------------------------------------------------ 启动
   function boot() {
     canvas = $('board');
@@ -538,6 +642,9 @@
     elStatus = $('status');
     elLevels = $('levels');
     elDelay = $('delay');
+    elAIPick = $('aiPick');
+    elLevelField = $('levelField');
+    elDelayField = $('delayField');
     elUndo = $('undo');
     elMeta = $('meta');
     elSides = $('sides');
@@ -555,6 +662,12 @@
     $('restart').addEventListener('click', restart);
     elUndo.addEventListener('click', undo);
     canvas.addEventListener('click', onClick);
+    if (elAIPick) {
+      elAIPick.addEventListener('change', function (e) {
+        var t = e.target;
+        if (t && t.tagName === 'INPUT') setAI(+t.getAttribute('data-side'), t.checked);
+      });
+    }
 
     initSound();
     initDots();
@@ -562,9 +675,12 @@
     st = newState();
     setLevel(st.level);
     if (elDelay) setDelay(st.delay);
+    syncAIPicker();
+    updateAIFields();
     setStatus();
     fitCanvas();
     tick();
+    kickoff();
 
     var lastW = window.innerWidth, lastH = window.innerHeight;
     window.addEventListener('resize', function () {
@@ -609,6 +725,12 @@
     setDelay: function (v) { setDelay(v); return st.delay; },
     delays: function () { return DELAYS.slice(); },
     setLevel: function (v) { setLevel(v); return st.level; },
+    // 电脑参与方：setAI(方, true/false)；四方全勾会被挡下并返回 false
+    setAI: setAI,
+    aiFlags: function () { return aiFlags.slice(); },
+    humanCount: humanCount,
+    aiCount: aiCount,
+    restart: restart,
     setSound: function (v) {
       var cb = $('sound');
       if (cb) cb.checked = !!v;

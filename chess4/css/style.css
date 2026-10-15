@@ -171,6 +171,14 @@ body::before {
   text-decoration: line-through;
   opacity: .7;
 }
+/* 状态条上的「电脑」小标（2026-10-15）—— 人机混排时要一眼看出哪几方不是人 */
+.sides .side i.ai {
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: .04em;
+  opacity: .78;
+  margin-left: 4px;
+}
 
 /* 横向铺开的四组控件 */
 .row {
@@ -186,6 +194,29 @@ body::before {
   letter-spacing: .14em;
   margin-bottom: 7px;
 }
+/* 一方电脑都没有时，「难度」「电脑间隔」用不上，压暗 + 挡掉点击
+   （pointer-events 而不是 disabled：里面是一排按钮，逐个置灰太啰嗦） */
+.row .field.off { opacity: .40; pointer-events: none; }
+
+/* 「电脑方」四色勾选（2026-10-15） */
+.picks { display: flex; gap: 15px; padding-top: 5px; }
+.pick {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13.5px;
+  color: var(--cream2);
+  cursor: pointer;
+  user-select: none;
+}
+.pick input { accent-color: var(--gold-d); width: 15px; height: 15px; }
+.pick:hover { color: var(--cream); }
+/* 小色块跟着棋子墨色走；纯黑在深木底上会糊掉，给它一圈浅描边 */
+.pick .dot { width: 10px; height: 10px; border-radius: 2px; flex: 0 0 auto; }
+.pick .dot.d0 { background: var(--red); }
+.pick .dot.d1 { background: var(--ink); box-shadow: 0 0 0 1px rgba(243, 231, 211, .60); }
+.pick .dot.d2 { background: var(--teal); }
+.pick .dot.d3 { background: var(--blue); }
 
 .seg { display: flex; border: 1px solid var(--hair); border-radius: 4px; overflow: hidden; }
 .seg button {
