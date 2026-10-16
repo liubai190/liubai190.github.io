@@ -7,7 +7,8 @@
  *       —— 最上面那条横线、最右边那条竖线开局留空，但照样能走上去、能在上面吃子
  *
  * 玩法（白 2026-10-10 口述确认）：
- *   1. 暗棋机制：全扣着开局，第一枚翻出的颜色归翻子的人；扣着的子不能被吃
+ *   1. 暗棋机制：全扣着开局，**第一枚异色**子出现时定色（谁翻出它谁执它，原色归对方）；
+ *      扣着的子不能被吃
  *   2. 象棋走法，但限制全放开：无九宫、象能过河、马不蹩腿、象不塞眼、兵能后退
  *   3. 吃子按走法算，不按等级大小
  *   4. 连吃：吃完可以接着吃，能拐弯，也能中途停手（落点自选）
@@ -82,6 +83,7 @@
       bd: bd,
       open: new Array(N).fill(false),
       seatColor: [null, null],
+      firstColor: null,                             // 第一枚翻出的颜色（只记色，先不定归属）
       turn: 0,
       plies: 0,
       quiet: 0,
@@ -229,9 +231,15 @@
     var p;
     if (mv.k === 0) {
       g.open[mv.f] = true;
-      if (g.seatColor[0] == null) {
-        g.seatColor[0] = g.bd[mv.f].s;
-        g.seatColor[1] = 1 - g.bd[mv.f].s;
+      if (g.seatColor[0] == null) {                  // 还没定色
+        var fc = g.bd[mv.f].s;
+        if (g.firstColor == null) {
+          g.firstColor = fc;                         // 第一枚：先不作数，只记色
+        } else if (fc !== g.firstColor) {            // 第一枚异色 -> 谁翻出它谁执它
+          g.seatColor[g.turn] = fc;
+          g.seatColor[1 - g.turn] = 1 - fc;
+        }
+        // 还是同色 -> 继续往下翻，谁都不定
       }
       g.quiet = 0;
       g.last = { k: 0, f: mv.f, t: mv.f, piece: g.bd[mv.f], seat: g.turn, caps: [] };
@@ -266,6 +274,7 @@
     if (!g.hist.length) return false;
     var st = g.hist.pop();
     g.bd = st.bd; g.open = st.open; g.seatColor = st.seatColor;
+    g.firstColor = st.firstColor;
     g.turn = st.turn; g.plies = st.plies; g.quiet = st.quiet;
     g.result = st.result; g.last = st.last;
     return true;
@@ -276,6 +285,7 @@
       bd: g.bd.map(function (p) { return p ? { s: p.s, t: p.t } : null; }),
       open: g.open.slice(),
       seatColor: g.seatColor.slice(),
+      firstColor: g.firstColor,
       turn: g.turn, plies: g.plies, quiet: g.quiet,
       result: g.result, last: g.last
     };
@@ -294,7 +304,11 @@
       p = g.bd[i];
       s.push(p ? ((g.open[i] ? 'O' : 'H') + p.t + p.s) : '..');
     }
-    return s.join('') + '|' + g.turn;
+    // 定色状态也要进键：没定色时「第一枚是什么颜色」决定后面还能不能定色
+    var st = g.seatColor[0] == null
+      ? '?' + (g.firstColor == null ? '-' : g.firstColor)
+      : String(g.seatColor[0]);
+    return s.join('') + '|' + g.turn + '|' + st;
   }
 
   function checkResult(g) {
@@ -341,6 +355,7 @@
     applyMove(g, mv);
     var r = fn(g, st);
     g.bd = st.bd; g.open = st.open; g.seatColor = st.seatColor;
+    g.firstColor = st.firstColor;
     g.turn = st.turn; g.plies = st.plies; g.quiet = st.quiet;
     g.result = st.result; g.last = st.last;
     return r;

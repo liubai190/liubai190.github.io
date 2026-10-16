@@ -6,10 +6,15 @@
  *
  *   棋盘   4x8 = 32 格，32 枚棋子（红黑各 16）全部背面朝上铺满
  *   回合   每回合二选一：翻一枚暗子 / 走一枚自己的明子
- *   定色   先行者翻出的第一枚棋子的颜色，就决定他执哪一方
- *   走子   每步走一格，上下左右（车马相仕帅兵都一样，没有象棋那套走法）
+ *   定色   翻出的**第一枚子先不作数**；第一枚**异色**子出现时，翻出它的人执那一方
+ *          （白 2026-10-16 指定：先手翻红、后手也翻红时，不能就这么把红判给先手，
+ *            要一直翻到异色出现 —— 谁翻出那个异色，谁就执它，原色归对方）
+ *   走子   每步走一格，上下左右（马相仕帅兵都一样，没有象棋那套走法）
+ *          例外：**车可以沿上下左右直线滑行**，路径上不能有棋子
  *   吃子   帅>仕>相>车>马>炮>兵，大的吃小的，相同的互吃
  *          帅不能吃兵；兵能吃帅（本页与「同级互吃」合并取通行解：兵也能吃兵）
+ *          车分两种：目标**紧邻**时按上面的等级（只能吃车及以下）；
+ *                    中间**隔了空格**时通吃任何子（白 2026-10-16 指定）
  *          炮吃任何子，但中间必须隔一个棋子，且可横向或竖向走多格
  *   判负   棋子被吃光 / 无棋可走
  *   判和   同一局面重复 / 连续 70 步没有吃子或翻子 / 双方总步数满 500
@@ -68,6 +73,8 @@
     return out;
   })();
 
+  var DIRS4 = [[0, 1], [0, -1], [1, 0], [-1, 0]];   // [行增量, 列增量]：右 左 下 上
+
   // ---------------------------------------------------------------- 规则
   /** 普通子（非炮）能否吃：att 吃 def */
   function canCapture(att, def) {
@@ -97,6 +104,32 @@
   }
 
   /**
+   * 车的直线扫描（白 2026-10-16 指定）：
+   *   路径上的空格都能走；走到遇到的第一个棋子就停——
+   *   紧邻（中间一个空格都没有）按等级吃，中间隔了空格则通吃任何子。
+   * 返回 { walks: [能停的空格], eats: [能吃的对方明子] }
+   */
+  function chaScan(bd, open, from) {
+    var p = bd[from], walks = [], eats = [];
+    var r0 = rowOf(from), c0 = colOf(from), k, r, c, step, j, q;
+    for (k = 0; k < 4; k++) {
+      step = 0;
+      for (r = r0 + DIRS4[k][0], c = c0 + DIRS4[k][1];
+           r >= 0 && r < ROWS && c >= 0 && c < COLS;
+           r += DIRS4[k][0], c += DIRS4[k][1]) {
+        step++;
+        j = idxOf(r, c); q = bd[j];
+        if (!q) { walks.push(j); continue; }               // 空格：可以停在这儿
+        if (open[j] && sideOf(q) !== sideOf(p)) {          // 第一个子：到这儿为止
+          if (step === 1 ? canCapture(p, q) : true) eats.push(j);
+        }
+        break;
+      }
+    }
+    return { walks: walks, eats: eats };
+  }
+
+  /**
    * 生成合法着法。col 传 null（定色之前）时只生成「翻子」。
    * 返回 [{ k:0 翻 | 1 走 | 2 吃, f: 起点, t: 终点 }]
    */
@@ -113,6 +146,11 @@
         for (j = 0; j < nb.length; j++) if (!bd[nb[j]]) out.push({ k: 1, f: i, t: nb[j] });
         tg = cannonTargets(bd, open, i);
         for (j = 0; j < tg.length; j++) out.push({ k: 2, f: i, t: tg[j] });
+      } else if (typeOf(p) === T_CHA) {
+        // 车：沿上下左右直线滑行（白 2026-10-16 指定），不再只走一格
+        var cs = chaScan(bd, open, i);
+        for (j = 0; j < cs.walks.length; j++) out.push({ k: 1, f: i, t: cs.walks[j] });
+        for (j = 0; j < cs.eats.length; j++) out.push({ k: 2, f: i, t: cs.eats[j] });
       } else {
         for (j = 0; j < nb.length; j++) {
           q = bd[nb[j]];
@@ -152,7 +190,11 @@
   function stateKey(g) {
     var a = new Array(NSQ), i;
     for (i = 0; i < NSQ; i++) a[i] = g.bd[i] ? (g.open[i] ? String(g.bd[i] + 40) : '*') : '.';
-    return a.join('') + '|' + g.turn + '|' + (g.seatColor[0] == null ? '?' : g.seatColor[0]);
+    // 定色状态也要进键：没定色时「第一枚是什么颜色」决定后面还能不能定色
+    var st = g.seatColor[0] == null
+      ? '?' + (g.firstColor == null ? '-' : g.firstColor)
+      : String(g.seatColor[0]);
+    return a.join('') + '|' + g.turn + '|' + st;
   }
 
   function createGame(opts) {
@@ -162,7 +204,8 @@
       bd: initialBoard(rng),
       open: new Uint8Array(NSQ),
       turn: 0,                       // 座位：0 = 先手（第一手翻子定色），1 = 后手
-      seatColor: [null, null],       // 座位 -> 颜色；第一枚翻出后定
+      seatColor: [null, null],       // 座位 -> 颜色；第一枚「异色」子翻出后才定
+      firstColor: null,              // 第一枚被翻开的棋子的颜色（只记色，先不定归属）
       eaten: [],                     // 已被吃掉的棋子（公开信息）
       quiet: 0,                      // 连续没有吃子 / 翻子的步数
       plies: 0,                      // 双方总步数（半回合）
@@ -229,18 +272,23 @@
       sc0: g.seatColor[0], sc1: g.seatColor[1],
       eaten: g.eaten.slice(), quiet: g.quiet, plies: g.plies,
       last: g.last, cur: g.cur, repKeys: Object.assign({}, g.repKeys),
-      flipped: g.flipped, result: g.result
+      flipped: g.flipped, firstColor: g.firstColor, result: g.result
     };
     g.hist.push(snap);
 
     var cap = 0, moved = g.bd[mv.f], mover = g.turn;
     if (mv.k === 0) {
       g.open[mv.f] = 1;
-      if (g.seatColor[g.turn] == null) {                 // 第一枚翻子 -> 定色
+      if (g.seatColor[0] == null) {                      // 还没定色
         var c = sideOf(g.bd[mv.f]);
-        g.seatColor[g.turn] = c;
-        g.seatColor[other(g.turn)] = other(c);
-        g.flipped = c;
+        if (g.firstColor == null) {
+          g.firstColor = c;                              // 第一枚：先不作数，只记下颜色
+        } else if (c !== g.firstColor) {                 // 第一枚异色 -> 谁翻出它谁执它
+          g.seatColor[g.turn] = c;
+          g.seatColor[other(g.turn)] = other(c);
+          g.flipped = c;
+        }
+        // 还是同色 -> 继续往下翻，谁都不定
       }
     } else {
       if (g.bd[mv.t]) { cap = g.bd[mv.t]; g.eaten.push(cap); }
@@ -267,7 +315,7 @@
     g.seatColor = [s.sc0, s.sc1];
     g.eaten = s.eaten; g.quiet = s.quiet; g.plies = s.plies;
     g.last = s.last; g.cur = s.cur; g.repKeys = s.repKeys;
-    g.flipped = s.flipped; g.result = s.result;
+    g.flipped = s.flipped; g.firstColor = s.firstColor; g.result = s.result;
     return true;
   }
 
@@ -326,6 +374,10 @@
       if (!p || !open[i] || sideOf(p) !== foe) continue;
       if (typeOf(p) === T_CAN) {
         if (cannonTargets(bd, open, i).indexOf(mv.t) >= 0) return v;
+      } else if (typeOf(p) === T_CHA) {
+        // 车能滑行：隔着空格也吃得到 —— 这条必须算进来，
+        // 否则 AI 会把子走到人家车口上还以为挺安全
+        if (chaScan(bd, open, i).eats.indexOf(mv.t) >= 0) return v;
       } else {
         nb = NB[i];
         for (j = 0; j < nb.length; j++) {
@@ -340,7 +392,6 @@
    * 落点的位置分：挨着对方明子 = 有接触、有机会；挨着自己明子 = 有照应。
    * 光靠子力评估的话，双方会互相绕圈、谁都不接触，一路磨到判和。
    */
-  var DIRS4 = [[0, 1], [0, -1], [1, 0], [-1, 0]];
   function spotScore(g, sq, me) {
     var r0 = rowOf(sq), c0 = colOf(sq), s = 0, k, r, c, i, p;
     for (k = 0; k < 4; k++) {
@@ -468,7 +519,7 @@
     colOf: colOf, rowOf: rowOf, idxOf: idxOf, other: other,
     enc: enc, sideOf: sideOf, typeOf: typeOf, rankOf: rankOf,
     pieceName: pieceName, pieceText: pieceText,
-    canCapture: canCapture, cannonTargets: cannonTargets, genMoves: genMoves,
+    canCapture: canCapture, cannonTargets: cannonTargets, chaScan: chaScan, genMoves: genMoves,
     createGame: createGame, legalMoves: legalMoves, doMove: doMove, undo: undo,
     checkEnd: checkEnd, aliveCount: aliveCount, stateKey: stateKey,
     poolFor: poolFor, sampleBoard: sampleBoard, evalFor: evalFor,

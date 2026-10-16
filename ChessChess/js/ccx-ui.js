@@ -227,8 +227,13 @@
     } else {
       var col = g.seatColor[g.turn];
       if (g.seatColor[0] == null) {
-        s = mode === 'pve' ? '翻一枚棋子开局 —— 翻出的颜色就是你执的一方'
-                           : '先手翻一枚棋子开局 —— 翻出的颜色决定他执哪一方';
+        // 定色规则（2026-10-16 起）：第一枚子只记颜色、不作数，翻到异色才定谁执哪一方
+        if (g.firstColor == null) {
+          s = '翻子开局 —— 第一枚只记颜色，翻出另一种颜色才定谁执哪一方';
+        } else {
+          s = '目前翻出的都是' + colorName(g.firstColor) + '方，接着翻：谁先翻出' +
+              colorName(1 - g.firstColor) + '方，谁就执' + colorName(1 - g.firstColor) + '方';
+        }
         elStatus.className = 'status hint';
       } else {
         s = (mode === 'pve' ? (g.turn === 0 ? '轮到你走' : '电脑走棋')

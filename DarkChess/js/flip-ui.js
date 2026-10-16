@@ -5,9 +5,10 @@
  * 棋盘 img/board.png 是烘焙好的 8x4 半盘（格盘，不是象棋的交叉点），
  * 本文件只负责摆棋子、画高亮、收点击。
  *
- * 关于「谁执什么颜色」：座位 0 是先手（翻第一枚棋子的那个人），
- * 人机模式下座位 0 恒为玩家、座位 1 为电脑 —— 先行者翻出的颜色决定归属，
- * 所以人机模式里玩家也可能执黑。
+ * 关于「谁执什么颜色」：座位 0 先手、座位 1 后手（人机模式下恒为玩家 / 电脑）。
+ * 定色规则（2026-10-16 起）：第一枚翻出的子**只记颜色、不作数**；
+ * 第一枚**异色**子出现时，翻出它的人执那一方，原来的颜色归对方。
+ * 所以定色由「第二个出现的颜色」决定，人机模式里玩家也可能执黑。
  */
 (function () {
   'use strict';
@@ -211,8 +212,13 @@
     } else {
       var col = g.seatColor[g.turn];
       if (g.seatColor[0] == null) {
-        s = mode === 'pve' ? '翻一枚棋子开局 —— 翻出的颜色就是你执的一方'
-                           : '先手翻一枚棋子开局 —— 翻出的颜色决定他执哪一方';
+        // 定色规则（2026-10-16 起）：第一枚子只记颜色、不作数，翻到异色才定谁执哪一方
+        if (g.firstColor == null) {
+          s = '翻子开局 —— 第一枚只记颜色，翻出另一种颜色才定谁执哪一方';
+        } else {
+          s = '目前翻出的都是' + colorName(g.firstColor) + '方，接着翻：谁先翻出' +
+              colorName(1 - g.firstColor) + '方，谁就执' + colorName(1 - g.firstColor) + '方';
+        }
         elStatus.className = 'status hint';
       } else {
         s = (mode === 'pve' ? (g.turn === 0 ? '轮到你走' : '电脑走棋')
@@ -247,7 +253,12 @@
                                : (g.last.seat === 0 ? '先手' : '后手');
       if (g.last.k === 0) lt = who + ' 翻开 ' + FQ.pieceText(g.last.piece);
       else if (g.last.cap) lt = who + ' 用 ' + FQ.pieceText(g.last.piece) + ' 吃掉 ' + FQ.pieceText(g.last.cap);
-      else lt = who + ' ' + FQ.pieceText(g.last.piece) + ' 走一格';
+      else {
+        // 车能滑行，步数不再恒为 1
+        var steps = Math.abs(FQ.rowOf(g.last.t) - FQ.rowOf(g.last.f)) +
+                    Math.abs(FQ.colOf(g.last.t) - FQ.colOf(g.last.f));
+        lt = who + ' ' + FQ.pieceText(g.last.piece) + (steps > 1 ? ' 走 ' + steps + ' 格' : ' 走一格');
+      }
     }
     if (g.result && !g.result.draw) {
       lt = hidden
