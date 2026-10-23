@@ -641,6 +641,14 @@ body.search-open {
 
 /* ===== 页脚版权 + 运行天数 ===== */
 
+/* 页脚上边框：minima 给 .site-footer 挂了一条**全宽**的 1px 线，
+   而下面 .site-copyright 又有一条**跟内容栏同宽**的短线 —— 两条叠在一起
+   像把页脚夹在中间的多余线条。只留短线（它与正文栏对齐，是有意设计的），
+   去掉全宽那条。跟页头 `.site-header { border-top: none }` 同一处理。 */
+.site-footer {
+  border-top: none;
+}
+
 .site-copyright {
   margin-top: 2em;
   padding-top: 1.2em;
@@ -649,6 +657,27 @@ body.search-open {
   color: #9a9a9a;
   text-align: center;
   letter-spacing: 0.02em;
+
+  /* 页脚入口（象棋四种）：跟在 © 上一行，字号颜色随整块。
+     半粗（600）+ 一条细下划线，作为入口够显眼、比正文弱一档 ——
+     页脚用的是系统无衬线，600 有真字重（不像正文那份屏显臻宋只有 400） */
+  .site-footer-nav {
+    margin-bottom: 0.6em;
+
+    a {
+      color: #9a9a9a;
+      font-weight: 600;
+      text-decoration: none;
+      border-bottom: 1px solid #d9d9d9;
+      padding-bottom: 1px;
+      transition: color 0.2s ease, border-color 0.2s ease;
+
+      &:hover {
+        color: #282728;
+        border-bottom-color: #282728;
+      }
+    }
+  }
 }
 
 /* ===== 折叠块（details）增强 ===== */
