@@ -3,6 +3,30 @@
 ---
 @import "minima";
 
+/* ===== 全局字体：把中文字体显式写进栈 ===== */
+
+/* 站点只在两处声明过 font-family（正文宋体、等宽），其余全部继承 minima 的
+   body 简写，那条栈是：
+     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif
+   **一个中文字体都没有**。所以现在中文全靠浏览器回退：
+   本机装过 Noto Sans SC，看起来正常；换一台没装的机器（或 Mac），
+   字形、字宽、断行位置全跟着变。
+
+   两条硬规矩：
+   1. 中文字体必须排在 sans-serif **之前**。排到它后面的话，sans-serif 先命中，
+      显式写的字体永远轮不到，等于没写。
+   2. emoji 三个字体保持在最末，否则彩色 emoji 会被中文字体截走，
+      变成单色豆腐块。
+
+   本次不动英数：它们仍由前面的 "Segoe UI" 命中，字形不变。 */
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial,
+    "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+
 /* ===== 页头：左站名+slogan，右导航 ===== */
 
 .site-header {
@@ -763,11 +787,15 @@ details.post-fold {
     "Noto Serif CJK SC", "Source Han Serif SC", serif;
 }
 
-/* 代码块、行内代码保持等宽，不跟着变宋体 */
+/* 代码块、行内代码保持等宽，不跟着变宋体。
+   末尾补两个中文等宽：这条栈之前也没有中文字体，代码里的中文注释
+   是回退到 monospace 才落到 NSimSun 的（Windows）。显式写出来，
+   换平台时不会掉进比例字体、把代码缩进对齐搞乱。 */
 .post-content code,
 .post-content pre {
   font-family: "Menlo", "Inconsolata", "Consolas", "Roboto Mono",
-    "Ubuntu Mono", "Liberation Mono", "Courier New", monospace;
+    "Ubuntu Mono", "Liberation Mono", "Courier New",
+    "Noto Sans Mono CJK SC", "NSimSun", "SimSun", monospace;
 }
 
 /* ===== 正文加厚：描边 ===== */
