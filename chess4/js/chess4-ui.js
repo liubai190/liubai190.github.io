@@ -150,20 +150,39 @@
   var dpr = 1, viewScale = 1;
 
   /**
+   * 可用宽度：读 .wrap 的内容宽度（clientWidth 已含内边距，再扣掉左右 padding）。
+   * 原来写死「视口宽 - 48」，一旦手机断点把 wrap 内边距改小，算出来就比容器宽，
+   * 棋盘会横向溢出。2026-11-09 移动端适配时改掉。
+   */
+  function availWidth() {
+    var el = document.querySelector('.wrap');
+    var vw = document.documentElement.clientWidth || 1200;
+    if (!el) return vw - 32;
+    var cs = window.getComputedStyle(el);
+    var pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+    // 两个来源取大：
+    //   ① wrap 的内容宽 —— 手机上跟着断点后的内边距走（比写死 48 多出 20px）；
+    //   ② 视口宽 - 32 —— 桌面上 wrap 有 max-width，而棋盘历来允许比它宽一点
+    //      （串串香画布 964 > wrap 内容宽 912），取大才能保证桌面渲染与改前一致。
+    return Math.max(el.clientWidth - pad, vw - 32);
+  }
+
+  /**
    * 画布尺寸：逻辑坐标恒为 1116x750，位图按（视口缩放 x devicePixelRatio）渲染。
-   * 面板已经从右侧挪到棋盘下方，所以纵向余量更紧 —— 按宽高都收，但留 0.66 下限，
-   * 实在放不下就让页面滚动，不把棋盘缩成看不清的小块。
+   * 面板已经从右侧挪到棋盘下方，所以纵向余量更紧 —— 按宽高都收。
+   * 2026-11-09：手机竖屏只有 358px 可用，原来的 0.5 下限会让 1116 的盘溢出 200px，
+   * 所以宽度改成硬约束（宁可小也不横溢），高度那档保留 0.62 下限免得看不清。
    */
   function fitCanvas() {
     var top = canvas.getBoundingClientRect().top || 0;
-    var availW = (document.documentElement.clientWidth || 1200) - 48;
+    var availW = availWidth();
     var availH = (window.innerHeight || 900) - top - 26;
     var sW = availW / W, sH = availH / H;
     var vs = Math.min(1, sW);
-    if (vs > sH) vs = Math.max(0.66, sH);
-    vs = Math.max(0.5, vs);
+    if (vs > sH) vs = Math.max(0.62, sH);
+    if (vs > sW) vs = sW;                       // 兜底：绝不横向溢出
     viewScale = vs;
-    dpr = viewScale * Math.min(window.devicePixelRatio || 1, 2);
+    dpr = viewScale * Math.min(window.devicePixelRatio || 1, 3);
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     canvas.style.width = (W * viewScale).toFixed(2) + 'px';

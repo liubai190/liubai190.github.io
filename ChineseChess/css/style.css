@@ -97,7 +97,16 @@ body::before {
   margin: 0 auto;
   width: fit-content;
 }
-#board { display: block; cursor: pointer; }
+/* 手机上手指落在棋盘上：别选中文字、别弹长按菜单、别把连点当双击缩放。
+   touch-action 只挡双击，双指捏合缩放仍然可用。 */
+#board {
+  display: block;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
 
 /* ---------- 下方面板 ---------- */
 .panel { margin-top: 18px; }
@@ -223,3 +232,56 @@ body::before {
 }
 .note strong { color: var(--cream2); font-weight: 600; }
 .note .credit { display: block; margin-top: 8px; color: #9b8468; }
+
+/* ================= 移动端（2026-11-09） =================
+   这页原来没有 <meta viewport>，手机按 980 的布局视口排版再整页缩到屏宽：
+   正文 15px 落到屏幕上只剩约 6px，Chrome 还会做「文字自动放大」，字号忽大忽小。
+   现在按设备宽度排版。棋盘由 chess-ui.js 的 fitCanvas() 按 .wrap 内容宽度等比缩放，
+   所以这里只处理文字与控件，**不给 canvas 加任何宽度约束**（会破坏点击换算）。 */
+@media (max-width: 640px) {
+  .wrap { padding: 12px 14px 36px; }
+
+  .head { padding-top: 26px; margin-bottom: 16px; }
+  .topnav { top: 0; left: 0; right: auto; gap: 18px; }
+  .topnav a { padding: 3px 0; }
+  .head h1 { font-size: 23px; letter-spacing: .06em; }
+  .head .sub { font-size: 12.5px; line-height: 1.7; }
+
+  .panel { margin-top: 14px; }
+  .status { font-size: 15px; min-height: 42px; padding: 10px 12px; margin-bottom: 14px; }
+
+  .row { gap: 12px 18px; }
+  .row .field .label { font-size: 12px; margin-bottom: 6px; }
+  .seg button { padding: 10px 15px; font-size: 14px; min-height: 42px; }
+  .btns button { padding: 10px 18px; font-size: 14px; min-height: 42px; }
+  .toggle { font-size: 14px; }
+  .toggle input { width: 17px; height: 17px; }
+  .meta { font-size: 13px; }
+
+  .note { font-size: 13px; line-height: 1.8; }
+}
+
+/* 小屏再收一档（iPhone SE 那档 320） */
+@media (max-width: 360px) {
+  .wrap { padding: 10px 12px 32px; }
+  .head h1 { font-size: 21px; }
+  .head .sub { font-size: 12px; }
+  .seg button { padding: 9px 11px; font-size: 13.5px; }
+  .btns button { padding: 9px 14px; font-size: 13.5px; }
+  .note { font-size: 12.5px; }
+}
+
+/* 触屏设备（宽度超过 640 的 iPad、手机横屏也走这里）：
+   640 那条断点管的是文字与留白，这里只管「手指点得到」。 */
+@media (hover: none) and (pointer: coarse) {
+  /* 手机横屏 / 平板会比 640 宽，走不到上面那条断点，字号得在这儿再兜一次底 */
+  .note { font-size: 13px; line-height: 1.8; }
+  .rulesbox { font-size: 14px; line-height: 1.85; }
+  .sides { font-size: 13px; }
+  .seg button, .btns button { min-height: 42px; }
+  .pick, .toggle { min-height: 34px; }
+  /* 触屏没有真正的 hover，点完会「粘住」变色 —— 换成按下才给反馈 */
+  .seg button:hover, .btns button:hover { background: rgba(28, 17, 8, .38); color: var(--cream2); }
+  .seg button.on:hover { background: linear-gradient(#f0c463, #c8921f); color: #3a2408; }
+  .seg button:active, .btns button:active { background: rgba(60, 38, 16, .55); }
+}

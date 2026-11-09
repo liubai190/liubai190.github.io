@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <title>象棋 · 灰木</title>
-<!-- 故意不写 viewport：本站不做移动端适配，手机浏览器会按桌面宽度整体缩放，反而不会碎版 -->
+<!-- 本页（导航页）做移动端适配：按设备宽度排版，窄屏单列、字号与留白单独收过。
+     四个游戏页仍是「不写 viewport、整页按 980 缩放」的老策略 —— 它们的盘面是定尺 canvas，
+     硬适配要重排整个界面，属于另一件事。 -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -12,7 +15,7 @@
   <header class="head">
     <a class="back" href="/">← 灰木</a>
     <h1>象棋</h1>
-    <p class="sub">四个象棋变体 · 都在浏览器里跑 · 纯静态、自写引擎、不用装东西</p>
+    <p class="sub">四个象棋变体 · <span class="nb">都在浏览器里跑</span> · <span class="nb">纯静态</span>、<span class="nb">自写引擎</span>、<span class="nb">不用装东西</span></p>
   </header>
 
   <ul class="grid">

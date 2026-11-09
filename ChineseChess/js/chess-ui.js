@@ -87,18 +87,38 @@
 
   var dpr = 1, viewScale = 1;
 
+  /** 可用宽度：读 .wrap 的内容宽度（clientWidth 含内边距，再扣掉左右 padding）。
+   *  原来写死「视口宽 - 48」，手机断点把 wrap 内边距改小之后算出来就比容器宽。 */
+  function availWidth() {
+    var el = document.querySelector('.wrap');
+    var vw = document.documentElement.clientWidth || 1200;
+    if (!el) return vw - 32;
+    var cs = window.getComputedStyle(el);
+    var pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+    // 两个来源取大：
+    //   ① wrap 的内容宽 —— 手机上跟着断点后的内边距走（比写死 48 多出 20px）；
+    //   ② 视口宽 - 32 —— 桌面上 wrap 有 max-width，而棋盘历来允许比它宽一点
+    //      （串串香画布 964 > wrap 内容宽 912），取大才能保证桌面渲染与改前一致。
+    return Math.max(el.clientWidth - pad, vw - 32);
+  }
+
   /**
-   * 画布尺寸：逻辑坐标恒为 588x648，实际位图按 (视口缩放 × devicePixelRatio) 渲染，
+   * 画布尺寸：逻辑坐标恒为 538x674，实际位图按 (视口缩放 × devicePixelRatio) 渲染，
    * 保证在小屏笔记本上整盘可见、在高分屏上依然清晰。
-   * （仅按窗口高度收缩，不做移动端布局）
+   * 2026-11-09 移动端适配：原来**只看窗口高度**，手机上 538 宽会横向溢出 ——
+   * 现在宽高都收，宽度是硬约束（宁可小也不横溢）。
    */
   function fitCanvas() {
     canvas.style.width = W + 'px';
     canvas.style.height = H + 'px';
     var top = canvas.getBoundingClientRect().top || 0;
-    var avail = (window.innerHeight || 900) - top - 26;
-    viewScale = Math.max(0.55, Math.min(1, avail / H));
-    dpr = viewScale * Math.min(window.devicePixelRatio || 1, 2);
+    var availW = availWidth();
+    var availH = (window.innerHeight || 900) - top - 26;
+    var sW = availW / W, sH = availH / H;
+    var vs = Math.min(1, sW, Math.max(0.5, sH));
+    if (vs > sW) vs = sW;
+    viewScale = vs;
+    dpr = viewScale * Math.min(window.devicePixelRatio || 1, 3);
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     canvas.style.width = (W * viewScale).toFixed(2) + 'px';

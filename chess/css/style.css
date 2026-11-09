@@ -20,6 +20,9 @@ html, body {
   padding: 0;
   background: var(--paper);
   color: var(--ink);
+  /* 手机横竖屏切换 / iOS 横屏时不要擅自放大字号 */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -84,6 +87,8 @@ body {
   color: inherit;
   text-decoration: none;
   transition: border-color .18s, box-shadow .18s, transform .18s;
+  /* 触屏轻点不要出现那层蓝色高亮块 */
+  -webkit-tap-highlight-color: transparent;
 }
 .card:hover {
   border-color: #dcc9a4;
@@ -151,6 +156,9 @@ body {
   border-bottom: 1px solid #e4d7ba;
 }
 
+/* 不想被折行拆开的短语（副标题里的「纯静态」就是，拆成「纯 / 静态」很怪） */
+.nb { white-space: nowrap; }
+
 /* ---------- 页脚说明 ---------- */
 .note {
   margin: 34px 0 0;
@@ -168,8 +176,72 @@ body {
   color: var(--mute);
 }
 
+/* ---------- 移动端（2026-11-09 起本页做适配） ----------
+   思路：断点只留一档（640px 以下单列），其余靠「窄屏就把留白与字号按比例收」。
+   桌面（>640）与原来逐像素一致，改动全部落在媒体查询里。 */
+
+/* 平板竖屏：两列并排已经偏挤，提前单列 */
 @media (max-width: 780px) {
-  .grid { grid-template-columns: 1fr; }
-  .wrap { padding: 32px 18px 56px; }
-  .head h1 { font-size: 28px; }
+  .grid { grid-template-columns: 1fr; gap: 15px; margin-top: 28px; }
+  .wrap { padding: 30px 20px 56px; }
+}
+
+@media (max-width: 640px) {
+  .wrap {
+    /* 刘海屏横过来时不贴边 */
+    padding: 20px max(16px, env(safe-area-inset-left)) 52px
+                max(16px, env(safe-area-inset-right));
+  }
+  /* 「← 灰木」原来是绝对定位贴在右上角，窄屏上会压住标题／副标题 —— 改成标题上方一行 */
+  .back {
+    position: static;
+    display: inline-block;
+    /* 顺手把可点高度做大一点，手指按得准 */
+    padding: 6px 4px 6px 0;
+    margin: 0 0 10px;
+    font-size: 13px;
+  }
+  .head h1 { font-size: 27px; letter-spacing: .14em; }
+  .head .sub {
+    margin-top: 5px;
+    font-size: 12.5px;
+    line-height: 1.75;
+    letter-spacing: .01em;
+    /* 副标题窄屏会折两行，均分一下，别让末行只剩一两个字 */
+    text-wrap: balance;
+  }
+
+  .grid { grid-template-columns: 1fr; gap: 13px; margin-top: 22px; }
+
+  .card { padding: 18px 16px 17px; border-radius: 9px; }
+  .arrow { top: 16px; right: 15px; font-size: 14px; }
+
+  /* 棋子图小一号，四张卡能少滚一屏 */
+  .icos { height: 40px; margin-bottom: 12px; }
+  .icos img { width: 40px; height: 40px; }
+  .icos img + img { margin-left: -9px; }
+
+  .ttl { font-size: 19px; }
+  .tag { margin-left: 8px; font-size: 11.5px; letter-spacing: .1em; }
+  .slug { margin: 4px 0 10px; font-size: 11px; }
+  .desc { font-size: 14px; line-height: 1.85; }
+
+  .note { margin-top: 26px; padding-top: 15px; font-size: 12.5px; line-height: 1.8; }
+  .note.fine { margin-top: 12px; font-size: 11.5px; }
+}
+
+/* 320 这类小屏再收一档，别让正文贴着边 */
+@media (max-width: 360px) {
+  .head h1 { font-size: 25px; }
+  .ttl { font-size: 18px; }
+  .card { padding: 16px 14px 15px; }
+  .desc { font-size: 13.5px; }
+  .slug { font-size: 10.5px; }
+}
+
+/* 触屏：:hover 会「粘住」，位移与阴影改成按下去的反馈 */
+@media (hover: none) {
+  .card:hover { border-color: var(--hair); box-shadow: none; transform: none; }
+  .card:hover .arrow { color: #d5d0c8; transform: none; }
+  .card:active { border-color: #dcc9a4; background: #fbf9f5; }
 }
