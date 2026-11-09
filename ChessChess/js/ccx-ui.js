@@ -46,6 +46,7 @@
 
   function newGame() {
     cancelAI();
+    INK.dirtyAll();          // 整盘换掉，墨水屏下必须整屏重画，否则旧棋子会留在画布上
     g = CCX.createGame();
     sel = -1; moveTo = []; capTo = {}; hoverSq = -1; hoverMv = null; hoverArr = [];
     busy = false; over = false;
@@ -92,18 +93,99 @@
     return Math.max(el.clientWidth - pad, vw - 32);
   }
 
+  // ------------------------------------------------------------ 旋转
+  /* 2026-11-09：加「旋转」按钮，点一下顺时针 90 度，点满四下回原位。
+     在 canvas 里转坐标系，不用 CSS transform —— CSS 旋转只改观感，布局盒还是老的
+     横尺寸（横盘竖起来会横向溢出容器），点击坐标也得另算；canvas 里转完之后
+     <canvas> 的宽高本身就是竖的，fitCanvas 与点击换算共用同一套数字。 */
+  var ROT_KEY = 'graywood.ccx.rot';
+  var rot = 0;                                  // 0/1/2/3 = 0/90/180/270 度
+  function rotSwap() { return (rot & 1) === 1; }
+  function lw() { return rotSwap() ? H : W; }    // 画布逻辑宽
+  function lh() { return rotSwap() ? W : H; }    // 画布逻辑高
+  /** 转坐标系。调用前必须已经 ctx.save()，由调用方 restore */
+  function rotCtx() {
+    if (rot === 1) { ctx.translate(H, 0); ctx.rotate(Math.PI / 2); }
+    else if (rot === 2) { ctx.translate(W, H); ctx.rotate(Math.PI); }
+    else if (rot === 3) { ctx.translate(0, W); ctx.rotate(-Math.PI / 2); }
+  }
+  /** 屏幕坐标 -> 棋盘逻辑坐标：先按实际渲染比例折回逻辑单位，再把旋转逆回去 */
+  function toLogical(ev) {
+    var r = canvas.getBoundingClientRect();
+    var sx = (ev.clientX - r.left) * (lw() / r.width);
+    var sy = (ev.clientY - r.top) * (lh() / r.height);
+    if (rot === 1) return [sy, H - sx];
+    if (rot === 2) return [W - sx, H - sy];
+    if (rot === 3) return [W - sy, sx];
+    return [sx, sy];
+  }
+  /** 手机竖屏默认竖起来（90 度）：横盘塞进竖屏只能缩到很小，转过来才用得满手机屏 */
+  function rotDefault() {
+    var touch = false;
+    try { touch = window.matchMedia('(hover: none) and (pointer: coarse)').matches; } catch (e) {}
+    return (touch && window.innerHeight > window.innerWidth) ? 1 : 0;
+  }
+  /** 记住上次转到的角度；从没手动转过就按设备给默认值 */
+  function rotLoad() {
+    var v = null;
+    try { v = localStorage.getItem(ROT_KEY); } catch (e) {}
+    if (v === null || v === '' || isNaN(+v)) return rotDefault();
+    return ((+v % 4) + 4) % 4;
+  }
+  function rotTurn() {
+    rot = (rot + 1) % 4;
+    try { localStorage.setItem(ROT_KEY, String(rot)); } catch (e) {}
+    fitCanvas();
+    draw();
+  }
+
+  // ------------------------------------------------------------ 沉浸模式
+  /* 2026-11-09：只留棋盘 —— 页头与面板整个 display:none，wrap 撑满视口把棋盘居中，
+     左上角浮一个「✕ 退出」。退出按钮写在 body 下（不走 wrap 的 flex），不受布局影响。
+     状态写 localStorage，与旋转同规矩：刷新后仍是沉浸（head 里有脚本提前打 class）。
+     没动浏览器全屏 API：手机与 iframe 里 requestFullscreen 时灵时不灵，退出还得多一条同步。 */
+  var IMM_KEY = 'graywood.ccx.imm';
+  function immOn() { return document.documentElement.classList.contains('immersive'); }
+  function immLoad() {
+    try { return localStorage.getItem(IMM_KEY) === '1'; } catch (e) { return false; }
+  }
+  /** 开关沉浸模式；save=true 时记住这次选择（点按钮、按 Esc 都算） */
+  function immSet(on, save) {
+    on = !!on;
+    document.documentElement.classList.toggle('immersive', on);
+    var b = document.getElementById('immersive');
+    if (b) { b.textContent = on ? '沉浸中' : '沉浸'; b.disabled = on; }
+    if (save) { try { localStorage.setItem(IMM_KEY, on ? '1' : '0'); } catch (e) {} }
+    if (on) { try { window.scrollTo(0, 0); } catch (e) {} }
+    fitCanvas();
+    draw();
+  }
+
   function fitCanvas() {
+    var cw = lw(), ch = lh();
     var availW = availWidth();
-    var vs = Math.min(1, availW / W);
+    var vs = Math.min(1, availW / cw);
+    // 竖起来之后高度可能成为约束（手机竖屏 90 度）：超了按高度收。
+    // 纵向挤一点可以往下滚，横向溢出才是真错，所以这一档只收不放。
+    // 沉浸模式下棋盘在视口里居中，「到页顶的距离」这个量法失效，直接按整屏算（上下各 8px）。
+    if (rotSwap() || immOn()) {
+      var top = canvas.getBoundingClientRect().top || 0;
+      var availH = immOn() ? (window.innerHeight || 900) - 16
+                           : (window.innerHeight || 900) - top - 26;
+      if (ch * vs > availH) vs = availH / ch;
+    }
     // 手机竖屏只有 358px 可用：888 / 964 的盘按 0.40 收会横向溢出，放宽到 0.26
     vs = Math.max(0.26, vs);
     viewScale = vs;
     dpr = viewScale * Math.min(window.devicePixelRatio || 1, 3);
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    canvas.style.width = (W * viewScale).toFixed(2) + 'px';
-    canvas.style.height = (H * viewScale).toFixed(2) + 'px';
+    canvas.width = Math.round(cw * dpr);
+    canvas.height = Math.round(ch * dpr);
+    canvas.style.width = (cw * viewScale).toFixed(2) + 'px';
+    canvas.style.height = (ch * viewScale).toFixed(2) + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // 改 canvas.width/height 会清空画布；墨水屏平时只重画脏区，
+    // 不在这里打个「整屏重画」的标记，退出沉浸/旋转/改窗口之后盘上会只剩几个格子
+    if (window.INK) INK.dirtyAll();
   }
 
   // ------------------------------------------------------------ 绘制
@@ -137,8 +219,24 @@
 
   function draw() {
     if (!g) return;
-    ctx.clearRect(0, 0, W, H);
-    if (boardImg && boardImg.complete && boardImg.naturalWidth) {
+    var ink = INK.isOn();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (!ink) ctx.clearRect(0, 0, lw(), lh());
+    ctx.save();
+    rotCtx();
+    if (ink) {
+      /* 墨水屏：只框「本帧与上帧涉及的交点」当 clip，其余像素一律不动。
+         残影按像素变化算，整屏重写一步就会闪一下；框住两格之后只剩 5% 左右。 */
+      var ip = [], qq;
+      if (g.last) { ip.push(g.last.f); if (g.last.t !== g.last.f) ip.push(g.last.t); }
+      if (sel >= 0) ip.push(sel);
+      if (hintOn) {
+        for (qq = 0; qq < moveTo.length; qq++) ip.push(moveTo[qq]);
+        for (qq in capTo) if (capTo.hasOwnProperty(qq)) ip.push(+qq);
+      }
+      INK.clip(ctx, ip, !!over);
+      INK.board(ctx);
+    } else if (boardImg && boardImg.complete && boardImg.naturalWidth) {
       ctx.drawImage(boardImg, 0, 0, W, H);
     } else {
       ctx.fillStyle = '#ddc38f'; ctx.fillRect(0, 0, W, H);
@@ -151,19 +249,30 @@
     for (i = 0; i < NSQ; i++) {
       p = g.bd[i];
       if (!p) continue;
-      if (!g.open[i] && !over) drawImg(backImg, X(i), Y(i), PIECE);
+      if (ink) {
+        if (!g.open[i] && !over) INK.back(ctx, X(i), Y(i), PIECE);
+        else INK.piece(ctx, CCX.pieceName(p), X(i), Y(i), PIECE);
+      } else if (!g.open[i] && !over) drawImg(backImg, X(i), Y(i), PIECE);
       else drawImg(imgs[CCX.pieceName(p)], X(i), Y(i), PIECE);
     }
 
     // 上一步：起点/终点各套一枚金环（画在棋子上才看得见）
     if (g.last) {
-      ring(g.last.f, 'rgba(255,214,120,.50)', 3, PIECE * 0.44);
-      if (g.last.t !== g.last.f) ring(g.last.t, 'rgba(255,214,120,.50)', 3, PIECE * 0.44);
+      if (ink) {
+        INK.hlLast(ctx, X(g.last.f), Y(g.last.f), SPACE);
+        if (g.last.t !== g.last.f) INK.hlLast(ctx, X(g.last.t), Y(g.last.t), SPACE);
+      } else {
+        ring(g.last.f, 'rgba(255,214,120,.50)', 3, PIECE * 0.44);
+        if (g.last.t !== g.last.f) ring(g.last.t, 'rgba(255,214,120,.50)', 3, PIECE * 0.44);
+      }
     }
 
     // 能走的空格
     var dots = hintOn ? moveTo : [];
-    for (i = 0; i < dots.length; i++) dot(dots[i], 'rgba(198,52,38,.42)', 12);
+    for (i = 0; i < dots.length; i++) {
+      if (ink) INK.hlDot(ctx, X(dots[i]), Y(dots[i]), PIECE);
+      else dot(dots[i], 'rgba(198,52,38,.42)', 12);
+    }
 
     // 能吃的落点：圈画在棋子外沿（内侧会压到棋子自带的红边，红子上糊成一片）
     // 先用米色描一圈底衬，红圈压在上面，红子/黑子/木纹底上都看得清
@@ -171,6 +280,23 @@
       for (var k in capTo) if (capTo.hasOwnProperty(k)) {
         var mv = capTo[k];
         var many = mv.caps.length > 1;
+        if (ink) {
+          INK.hlCap(ctx, X(+k), Y(+k), PIECE);
+          if (many) {
+            // 墨水屏里徽章改成「白底黑圈黑字」，纯 1 位色也读得出连吃几枚
+            var ibx = X(+k), iby = Y(+k) - PIECE * 0.56;
+            ctx.save();
+            ctx.beginPath(); ctx.arc(ibx, iby, 13, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff'; ctx.fill();
+            ctx.lineWidth = 2; ctx.strokeStyle = '#000'; ctx.stroke();
+            ctx.fillStyle = '#000';
+            ctx.font = '500 17px system-ui, "Microsoft YaHei", sans-serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(String(mv.caps.length), ibx, iby + 0.5);
+            ctx.restore();
+          }
+          continue;
+        }
         var rr = PIECE * 0.53;
         ring(+k, 'rgba(255,249,236,.92)', many ? 9 : 7, rr);
         ring(+k, many ? 'rgba(198,52,38,.98)' : 'rgba(198,52,38,.85)', many ? 5 : 3, rr);
@@ -195,16 +321,20 @@
       }
     }
 
-    // 悬停预览
-    var hd = (hintOn && sel < 0) ? hoverArr : [];
+    // 悬停预览（墨水屏没有鼠标，且它靠透明度分层，1 位色里会变网点 —— 直接不画）
+    var hd = (!ink && hintOn && sel < 0) ? hoverArr : [];
     for (i = 0; i < hd.length; i++) dot(hd[i], 'rgba(198,52,38,.20)', 11);
-    if (hoverMv && hintOn && sel < 0) {
+    if (!ink && hoverMv && hintOn && sel < 0) {
       ring(hoverMv.t, 'rgba(198,52,38,.42)', 2.5, PIECE * 0.44);
       ring(hoverSq, 'rgba(255,214,120,.42)', 2, PIECE * 0.46);
     }
 
     // 选中
-    if (sel >= 0) ring(sel, 'rgba(255,214,120,.95)', 4, PIECE * 0.46);
+    if (sel >= 0) {
+      if (ink) INK.hlSel(ctx, X(sel), Y(sel), PIECE);
+      else ring(sel, 'rgba(255,214,120,.95)', 4, PIECE * 0.46);
+    }
+    ctx.restore();                                // 收掉旋转变换
   }
 
   // ------------------------------------------------------------ 提示
@@ -462,11 +592,9 @@
     snd.win = $('snd-win'); snd.lose = $('snd-lose');
 
     function squareAt(e) {
-      var rect = canvas.getBoundingClientRect();
-      var x = (e.clientX - rect.left) / viewScale;
-      var y = (e.clientY - rect.top) / viewScale;
-      var c = Math.round((x - X0) / SPACE);
-      var r = Math.round((y - Y0) / SPACE);
+      var p = toLogical(e);
+      var c = Math.round((p[0] - X0) / SPACE);
+      var r = Math.round((p[1] - Y0) / SPACE);
       if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return -1;
       return r * COLS + c;
     }
@@ -504,12 +632,33 @@
       cancelAI();
       CCX.undo(g);
       if (mode === 'pve' && g.hist.length && g.turn !== 0) CCX.undo(g);
+      INK.dirtyAll();        // 悔棋会一次改回好几个格子
       clearSel(); over = false;
       draw(); render();
       scheduleAI();
     });
 
     elRestart.addEventListener('click', function () { newGame(); });
+    $('rotate').addEventListener('click', rotTurn);
+    document.getElementById('immersive').addEventListener('click', function () {
+      immSet(!immOn(), true);
+    });
+    document.getElementById('exitImm').addEventListener('click', function () {
+      immSet(false, true);
+    });
+    // 墨水屏是自用开关：入口在面板里，键盘按 i 也能切（切了整页重来）
+    var elInk = document.getElementById('ink');
+    if (elInk) {
+      elInk.textContent = INK.isOn() ? '墨水屏 · 开' : '墨水屏';
+      elInk.addEventListener('click', function () { INK.toggle(); });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && immOn()) immSet(false, true);
+      if ((e.key === 'i' || e.key === 'I') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        var t = e.target && e.target.tagName;
+        if (t !== 'INPUT' && t !== 'TEXTAREA') INK.toggle();
+      }
+    });
 
     elSound.addEventListener('change', function () { soundOn = elSound.checked; });
 
@@ -525,8 +674,17 @@
       elRules.textContent = box.hidden ? '规则' : '收起规则';
     });
 
+    rot = rotLoad();
+    // 墨水屏模块要在第一次 draw 之前 init：它管着棋盘线、棋子重绘和脏区 clip
+    INK.init({
+      type: 'ccx', W: W, H: H, cell: SPACE, piece: PIECE,
+      xy: function (i) { return [X(i), Y(i)]; }
+    });
     g = CCX.createGame();
     loadImages(function () { fitCanvas(); draw(); render(); });
+    // 墨水屏一开就强制沉浸：既然是墨水屏，本来就是只看棋盘
+    if (immLoad() || INK.isOn()) immSet(true, false);
+
     window.addEventListener('resize', function () { fitCanvas(); draw(); });
   }
 
@@ -536,6 +694,8 @@
   // 自动化测试入口（正常游玩用不到）
   window.CCX_UI = {
     game: function () { return g; },
+    // 测试用：强制整屏重画一帧（用来验证墨水屏的脏区重绘没漏画）
+    redraw: function () { INK.dirtyAll(); draw(); },
     play: play,
     square: onSquare,
     setMode: function (m) { mode = m; newGame(); },

@@ -5,6 +5,10 @@
 <title>四界大战 · 四人象棋</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="stylesheet" href="css/style.css">
+<script>/* 沉浸模式刷新后接着沉浸：提前打 class，免得先闪一帧页头与面板 */
+try { if (localStorage.getItem('graywood.chess4.imm') === '1')
+        document.documentElement.className += ' immersive'; } catch (e) {}
+</script>
 </head>
 <body>
 
@@ -64,6 +68,8 @@
           <div class="btns">
             <button type="button" id="undo">悔棋</button>
             <button type="button" id="restart">重新开始</button>
+            <button type="button" id="rotate" title="把棋盘顺时针转 90 度，点四次转回原位">旋转</button>
+            <button type="button" id="immersive" title="只留棋盘，Esc 或左上角按钮退出">沉浸</button>
           </div>
         </div>
 
@@ -126,6 +132,9 @@
     </div>
   </div>
 </div>
+
+<!-- 沉浸模式的退出按钮：只在 html.immersive 时显示，固定在左上角 -->
+<button type="button" id="exitImm" aria-label="退出沉浸模式" title="退出沉浸模式（Esc）">✕ 退出</button>
 
 <audio id="snd-select"  src="audio/select.wav"  preload="auto"></audio>
 <audio id="snd-move"    src="audio/move.wav"    preload="auto"></audio>

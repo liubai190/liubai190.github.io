@@ -494,3 +494,65 @@ body::before {
   .cell.on:hover { background: rgba(70, 44, 14, .58); color: var(--cream); }
   .preset:active, .cell:active:not(:disabled) { background: rgba(60, 38, 16, .55); }
 }
+
+
+/* ---------- 沉浸模式：只留棋盘（2026-11-09） ----------
+   class 挂在 <html> 上，由 head 里一小段脚本提前恢复，刷新时不会先闪一帧面板。
+   页头、面板、说明全部不显示；wrap 撑满视口把棋盘居中；退出按钮在 body 下、
+   position:fixed，所以不受 wrap 的 flex 布局影响。
+   沉浸时的可用高度按整屏算，见各 *-ui.js 的 fitCanvas / immOn()。 */
+html.immersive, html.immersive body { overflow: hidden; }
+html.immersive .head,
+html.immersive .panel { display: none; }
+html.immersive .wrap {
+  max-width: none;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+html.immersive .board-box { margin: 0; }
+
+#exitImm {
+  display: none;
+  position: fixed;
+  left: 12px;
+  left: max(12px, env(safe-area-inset-left));
+  top: 12px;
+  top: max(12px, env(safe-area-inset-top));
+  z-index: 9;
+  align-items: center;
+  min-height: 34px;
+  padding: 5px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: .06em;
+  color: rgba(243, 231, 211, .88);
+  background: rgba(20, 12, 6, .55);
+  border: 1px solid rgba(224, 179, 84, .34);
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  transition: color .15s, background .15s, border-color .15s, opacity .15s;
+}
+html.immersive #exitImm { display: flex; }
+/* 沉浸时它是唯一可能挡视线的东西：静止半透明，指上去才亮 */
+@media (hover: hover) {
+  #exitImm { opacity: .62; }
+  #exitImm:hover, #exitImm:focus-visible {
+    opacity: 1;
+    color: #fff;
+    background: rgba(60, 38, 16, .88);
+    border-color: rgba(224, 179, 84, .72);
+    outline: none;
+  }
+}
+/* 触屏没有 hover：常态就看清，按下给反馈；手机上放大到 42px 好点 */
+@media (hover: none) {
+  #exitImm { opacity: .82; min-height: 42px; padding: 8px 16px; }
+  #exitImm:active { opacity: 1; background: rgba(60, 38, 16, .88); }
+}

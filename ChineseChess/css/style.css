@@ -285,3 +285,125 @@ body::before {
   .seg button.on:hover { background: linear-gradient(#f0c463, #c8921f); color: #3a2408; }
   .seg button:active, .btns button:active { background: rgba(60, 38, 16, .55); }
 }
+
+
+/* ---------- 沉浸模式：只留棋盘（2026-11-09） ----------
+   class 挂在 <html> 上，由 head 里一小段脚本提前恢复，刷新时不会先闪一帧面板。
+   页头、面板、说明全部不显示；wrap 撑满视口把棋盘居中；退出按钮在 body 下、
+   position:fixed，所以不受 wrap 的 flex 布局影响。
+   沉浸时的可用高度按整屏算，见各 *-ui.js 的 fitCanvas / immOn()。 */
+html.immersive, html.immersive body { overflow: hidden; }
+html.immersive .head,
+html.immersive .panel { display: none; }
+html.immersive .wrap {
+  max-width: none;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+html.immersive .board-box { margin: 0; }
+
+#exitImm {
+  display: none;
+  position: fixed;
+  left: 12px;
+  left: max(12px, env(safe-area-inset-left));
+  top: 12px;
+  top: max(12px, env(safe-area-inset-top));
+  z-index: 9;
+  align-items: center;
+  min-height: 34px;
+  padding: 5px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  letter-spacing: .06em;
+  color: rgba(243, 231, 211, .88);
+  background: rgba(20, 12, 6, .55);
+  border: 1px solid rgba(224, 179, 84, .34);
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  transition: color .15s, background .15s, border-color .15s, opacity .15s;
+}
+html.immersive #exitImm { display: flex; }
+/* 沉浸时它是唯一可能挡视线的东西：静止半透明，指上去才亮 */
+@media (hover: hover) {
+  #exitImm { opacity: .62; }
+  #exitImm:hover, #exitImm:focus-visible {
+    opacity: 1;
+    color: #fff;
+    background: rgba(60, 38, 16, .88);
+    border-color: rgba(224, 179, 84, .72);
+    outline: none;
+  }
+}
+/* 触屏没有 hover：常态就看清，按下给反馈；手机上放大到 42px 好点 */
+@media (hover: none) {
+  #exitImm { opacity: .82; min-height: 42px; padding: 8px 16px; }
+  #exitImm:active { opacity: 1; background: rgba(60, 38, 16, .88); }
+}
+
+/* 选项行里的「墨水屏」入口：本页原本没有 .link 样式，补一条（样式对齐翻棋/串串香） */
+.link {
+  padding: 5px 14px;
+  font-size: 13.5px;
+  font-family: inherit;
+  color: var(--cream2);
+  background: rgba(28, 17, 8, .38);
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.link:hover { border-color: rgba(224, 179, 84, .60); color: var(--cream); background: rgba(60, 38, 16, .55); }
+
+/* ---------- 墨水屏模式（1 位色，自用） ----------
+   进这个模式就不是木纹皮肤了，是白纸黑线：木纹底图、暗罩、渐变、阴影、过渡
+   全部关掉 —— 墨水屏刷不动，动画和半透明会糊成一片还会留残影。
+   棋子与棋盘由 js/ink-core.js 在 canvas 里重绘，这里只管页面外壳。 */
+html.ink, html.ink body { background: #fff; color: #000; background-color: #fff; }
+html.ink body::before { display: none; }
+
+html.ink .head h1,
+html.ink .head .sub,
+html.ink .head .topnav a,
+html.ink .panel,
+html.ink .row .field .label,
+html.ink .meta,
+html.ink .note,
+html.ink .rulesbox,
+html.ink .rulesbox h3 { color: #000; }
+
+html.ink .status {
+  color: #000; background: #fff; border-color: #000;
+}
+html.ink .status.busy,
+html.ink .status.hint,
+html.ink .status.over { color: #000; background: #fff; border-color: #000; }
+html.ink .status.busy::after { animation: none; content: ""; }
+
+html.ink .sides .side,
+html.ink .sides .s-red,
+html.ink .sides .s-black { color: #000; background: #fff; border-color: #000; }
+html.ink .sides .side.now { background: #000; color: #fff; }
+
+html.ink .seg { border-color: #000; }
+html.ink .seg button { color: #000; background: #fff; border-left-color: #000; }
+html.ink .seg button.on { background: #000; color: #fff; }
+
+html.ink .btns button,
+html.ink .link { color: #000 !important; background: #fff !important; border-color: #000 !important; }
+html.ink #exitImm { color: #000 !important; background: #fff !important; border-color: #000 !important; }
+
+html.ink * {
+  text-shadow: none !important;
+  box-shadow: none !important;
+  transition: none !important;
+  animation: none !important;
+  background-image: none !important;
+}

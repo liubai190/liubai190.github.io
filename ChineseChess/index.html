@@ -5,6 +5,18 @@
 <title>中国象棋 · 人机对弈</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="stylesheet" href="css/style.css">
+<script>/* 沉浸 / 墨水屏刷新后接着用：提前打 class，免得先闪一帧页头与面板。
+   墨水屏是自用开关（绝大多数人不会在墨水屏上下棋），入口只有地址栏 ?ink=1/?ink=0，
+   而且一开就强制进沉浸 —— 既然是墨水屏，本来就是只看棋盘。 */
+try {
+  var im = location.search.match(/[?&]ink=([01])(?=[&#]|$)/);
+  if (im) localStorage.setItem('graywood.ink', im[1]);
+  var inkMode = localStorage.getItem('graywood.ink') === '1';
+  if (inkMode) document.documentElement.className += ' ink immersive';
+  else if (localStorage.getItem('graywood.chinese.imm') === '1')
+    document.documentElement.className += ' immersive';
+} catch (e) {}
+</script>
 </head>
 <body>
 
@@ -49,6 +61,8 @@
           <div class="btns">
             <button type="button" id="undo">悔棋</button>
             <button type="button" id="restart">重新开始</button>
+            <button type="button" id="rotate" title="把棋盘顺时针转 90 度，点四次转回原位">旋转</button>
+            <button type="button" id="immersive" title="只留棋盘，Esc 或左上角按钮退出">沉浸</button>
           </div>
         </div>
 
@@ -57,6 +71,7 @@
           <div class="toggles">
             <label class="toggle"><input type="checkbox" id="dots"> 走法提示</label>
             <label class="toggle"><input type="checkbox" id="sound" checked> 音效</label>
+            <button type="button" class="link" id="ink" title="白底黑线的墨水屏模式（地址栏 ?ink=1 打开，?ink=0 关闭）">墨水屏</button>
           </div>
         </div>
 
@@ -80,6 +95,9 @@
   </div>
 </div>
 
+<!-- 沉浸模式的退出按钮：只在 html.immersive 时显示，固定在左上角 -->
+<button type="button" id="exitImm" aria-label="退出沉浸模式" title="退出沉浸模式（Esc）">✕ 退出</button>
+
 <audio id="snd-select"  src="audio/select.wav"  preload="auto"></audio>
 <audio id="snd-move"    src="audio/move.wav"    preload="auto"></audio>
 <audio id="snd-capture" src="audio/capture.wav" preload="auto"></audio>
@@ -87,6 +105,8 @@
 <audio id="snd-win"     src="audio/win.wav"     preload="auto"></audio>
 <audio id="snd-lose"    src="audio/lose.wav"    preload="auto"></audio>
 
+<script src="js/glyphs.js"></script>
+<script src="js/ink-core.js"></script>
 <script src="js/chess-core.js"></script>
 <script src="js/chess-ui.js"></script>
 </body>

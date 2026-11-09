@@ -177,26 +177,97 @@
     return Math.max(el.clientWidth - pad, vw - 32);
   }
 
+  // ------------------------------------------------------------ 旋转
+  /* 2026-11-09：加「旋转」按钮，点一下顺时针 90 度，点满四下回原位。
+     在 canvas 里转坐标系，不用 CSS transform —— CSS 旋转只改观感，布局盒还是老的
+     横尺寸（横盘竖起来会横向溢出容器），点击坐标也得另算；canvas 里转完之后
+     <canvas> 的宽高本身就是竖的，fitCanvas 与点击换算共用同一套数字。 */
+  var ROT_KEY = 'graywood.chess4.rot';
+  var rot = 0;                                  // 0/1/2/3 = 0/90/180/270 度
+  function rotSwap() { return (rot & 1) === 1; }
+  function lw() { return rotSwap() ? H : W; }    // 画布逻辑宽
+  function lh() { return rotSwap() ? W : H; }    // 画布逻辑高
+  /** 转坐标系。调用前必须已经 ctx.save()，由调用方 restore */
+  function rotCtx() {
+    if (rot === 1) { ctx.translate(H, 0); ctx.rotate(Math.PI / 2); }
+    else if (rot === 2) { ctx.translate(W, H); ctx.rotate(Math.PI); }
+    else if (rot === 3) { ctx.translate(0, W); ctx.rotate(-Math.PI / 2); }
+  }
+  /** 屏幕坐标 -> 棋盘逻辑坐标：先按实际渲染比例折回逻辑单位，再把旋转逆回去 */
+  function toLogical(ev) {
+    var r = canvas.getBoundingClientRect();
+    var sx = (ev.clientX - r.left) * (lw() / r.width);
+    var sy = (ev.clientY - r.top) * (lh() / r.height);
+    if (rot === 1) return [sy, H - sx];
+    if (rot === 2) return [W - sx, H - sy];
+    if (rot === 3) return [W - sy, sx];
+    return [sx, sy];
+  }
+  /** 这两页不默认转：中国象棋转 90 度之后红黑两家会跑到左右两侧，四界大战四方也各有
+   *  各的方位 —— 都不是常规视角。只有两页翻棋在手机竖屏默认竖起来（白的口径 2026-11-09）。
+   *  想要就自己点「旋转」，选过的角度会记住。 */
+  function rotDefault() {
+    return 0;
+  }
+  /** 记住上次转到的角度；从没手动转过就按设备给默认值 */
+  function rotLoad() {
+    var v = null;
+    try { v = localStorage.getItem(ROT_KEY); } catch (e) {}
+    if (v === null || v === '' || isNaN(+v)) return rotDefault();
+    return ((+v % 4) + 4) % 4;
+  }
+  function rotTurn() {
+    rot = (rot + 1) % 4;
+    try { localStorage.setItem(ROT_KEY, String(rot)); } catch (e) {}
+    fitCanvas();
+    draw();
+  }
+
   /**
    * 画布尺寸：逻辑坐标恒为 1116x750，位图按（视口缩放 x devicePixelRatio）渲染。
    * 面板已经从右侧挪到棋盘下方，所以纵向余量更紧 —— 按宽高都收。
    * 2026-11-09：手机竖屏只有 358px 可用，原来的 0.5 下限会让 1116 的盘溢出 200px，
    * 所以宽度改成硬约束（宁可小也不横溢），高度那档保留 0.62 下限免得看不清。
    */
+  // ------------------------------------------------------------ 沉浸模式
+  /* 2026-11-09：只留棋盘 —— 页头与面板整个 display:none，wrap 撑满视口把棋盘居中，
+     左上角浮一个「✕ 退出」。退出按钮写在 body 下（不走 wrap 的 flex），不受布局影响。
+     状态写 localStorage，与旋转同规矩：刷新后仍是沉浸（head 里有脚本提前打 class）。
+     没动浏览器全屏 API：手机与 iframe 里 requestFullscreen 时灵时不灵，退出还得多一条同步。 */
+  var IMM_KEY = 'graywood.chess4.imm';
+  function immOn() { return document.documentElement.classList.contains('immersive'); }
+  function immLoad() {
+    try { return localStorage.getItem(IMM_KEY) === '1'; } catch (e) { return false; }
+  }
+  /** 开关沉浸模式；save=true 时记住这次选择（点按钮、按 Esc 都算） */
+  function immSet(on, save) {
+    on = !!on;
+    document.documentElement.classList.toggle('immersive', on);
+    var b = document.getElementById('immersive');
+    if (b) { b.textContent = on ? '沉浸中' : '沉浸'; b.disabled = on; }
+    if (save) { try { localStorage.setItem(IMM_KEY, on ? '1' : '0'); } catch (e) {} }
+    if (on) { try { window.scrollTo(0, 0); } catch (e) {} }
+    fitCanvas();
+    draw();
+  }
+
   function fitCanvas() {
     var top = canvas.getBoundingClientRect().top || 0;
     var availW = availWidth();
-    var availH = (window.innerHeight || 900) - top - 26;
-    var sW = availW / W, sH = availH / H;
+    // 沉浸时棋盘在视口里居中，「到页顶的距离」量法失效，按整屏算（上下各 8px 留白）
+    var availH = immOn() ? (window.innerHeight || 900) - 16
+                         : (window.innerHeight || 900) - top - 26;
+    var cw = lw(), ch = lh();
+    var sW = availW / cw, sH = availH / ch;
     var vs = Math.min(1, sW);
     if (vs > sH) vs = Math.max(0.62, sH);
     if (vs > sW) vs = sW;                       // 兜底：绝不横向溢出
     viewScale = vs;
     dpr = viewScale * Math.min(window.devicePixelRatio || 1, 3);
-    canvas.width = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
-    canvas.style.width = (W * viewScale).toFixed(2) + 'px';
-    canvas.style.height = (H * viewScale).toFixed(2) + 'px';
+    canvas.width = Math.round(cw * dpr);
+    canvas.height = Math.round(ch * dpr);
+    canvas.style.width = (cw * viewScale).toFixed(2) + 'px';
+    canvas.style.height = (ch * viewScale).toFixed(2) + 'px';
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
@@ -280,7 +351,10 @@
   }
 
   function draw() {
-    ctx.clearRect(0, 0, W, H);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, lw(), lh());
+    ctx.save();
+    rotCtx();
     if (boardImg && boardImg.complete && boardImg.naturalWidth) {
       ctx.drawImage(boardImg, 0, 0, BW, BMH);
     } else {
@@ -323,6 +397,7 @@
         for (k = 0; k < st.blocked.length; k++) drawBlocked(st.blocked[k]);
       }
     }
+    ctx.restore();                                // 收掉旋转变换
   }
 
   function tick() {
@@ -684,9 +759,8 @@
 
   // ------------------------------------------------------------ 点击
   function hit(ev) {
-    var r = canvas.getBoundingClientRect();
-    var x = (ev.clientX - r.left) * (W / r.width);
-    var y = (ev.clientY - r.top) * (H / r.height);
+    var lg = toLogical(ev);
+    var x = lg[0], y = lg[1];
     var c = Math.round((x - MX) / SPACE), rw = Math.round((y - GY0) / SPACE);
     if (c < 0 || c >= COLS || rw < 0 || rw >= ROWS) return -1;
     var dx = x - px(c), dy = y - py(rw);
@@ -852,6 +926,16 @@
       });
     }
     $('restart').addEventListener('click', restart);
+    $('rotate').addEventListener('click', rotTurn);
+    document.getElementById('immersive').addEventListener('click', function () {
+      immSet(!immOn(), true);
+    });
+    document.getElementById('exitImm').addEventListener('click', function () {
+      immSet(false, true);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && immOn()) immSet(false, true);
+    });
     elUndo.addEventListener('click', undo);
     canvas.addEventListener('click', onClick);
     if (elAIPick) {
@@ -865,6 +949,7 @@
     initDots();
     loadScheme();
 
+    rot = rotLoad();
     st = newState();
     setLevel(st.level);
     if (elDelay) setDelay(st.delay);
@@ -874,6 +959,8 @@
     fitCanvas();
     tick();
     kickoff();
+
+    if (immLoad()) immSet(true, false);
 
     var lastW = window.innerWidth, lastH = window.innerHeight;
     window.addEventListener('resize', function () {
