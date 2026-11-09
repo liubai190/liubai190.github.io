@@ -11,7 +11,10 @@
   --card: rgba(28, 17, 8, .42);
   --hair: rgba(224, 179, 84, .30);
   --red: #d6503f;
-  --ink: #000000;
+  --ink: #000000;        /* 黑方【色块】用（深底上不能用它写字） */
+  /* 黑方【文字】必须用白：深木底（亮度 ~45）上纯黑对比度约 1.1:1，等于看不见
+     （2026-11-09 用户反馈「文字黑背景暗，可读性太差」）。与四界大战同源。 */
+  --ink-txt: #fff;
 }
 
 * { box-sizing: border-box; }
@@ -153,7 +156,7 @@ body::before {
   transition: color .15s, border-color .15s, background .15s;
 }
 .sides .s-red { color: var(--red); }
-.sides .s-black { color: var(--ink); }
+.sides .s-black { color: var(--ink-txt); }
 .sides .side.now {
   border-color: rgba(224, 179, 84, .70);
   background: rgba(70, 44, 14, .60);

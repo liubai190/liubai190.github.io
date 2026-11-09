@@ -16,7 +16,11 @@
   --red: #d6503f;        /* 红方（你）：棋子墨是红 */
   --teal: #35b2ac;       /* 青军：棋子墨是水鸭色 #008080 */
   --blue: #4e9fd1;       /* 蓝方：棋子墨是蓝 #1b5370 */
-  --ink: #000000;        /* 黑方：纯黑，与棋子墨一致（2026-10-09 用户要求「黑就叫黑」） */
+  --ink: #000000;        /* 黑方【色块】：纯黑，与棋子墨一致（只给 .pick 的色点用） */
+  /* 黑方【文字】必须用白：「提亮」对红/青/蓝是提亮，对黑只能翻成白 ——
+     深木底（亮度 ~45）上纯黑的对比度约 1.1:1，等于看不见
+     （2026-11-09 用户反馈「文字黑背景暗，可读性太差」，改回白）。 */
+  --ink-txt: #fff;
 }
 
 * { box-sizing: border-box; }
@@ -156,9 +160,10 @@ body::before {
   background: rgba(28, 17, 8, .30);
   transition: color .15s, border-color .15s, background .15s;
 }
-/* 四家标识色与棋子一致：s0 红、s1 黑、s2 青、s3 蓝（编号 = core.js 的内部常量） */
+/* 四家标识色与棋子一致：s0 红、s1 黑、s2 青、s3 蓝（编号 = core.js 的内部常量）
+   s1 的文字色走 --ink-txt（白），--ink（纯黑）只用于色块 */
 .sides .s0 { color: var(--red); }
-.sides .s1 { color: var(--ink); }
+.sides .s1 { color: var(--ink-txt); }
 .sides .s2 { color: var(--teal); }
 .sides .s3 { color: var(--blue); }
 .sides .side.now {
@@ -289,6 +294,6 @@ body::before {
 .note .credit { display: block; margin-top: 8px; color: #9b8468; }
 /* 规则段里的四方字，色值与状态条同源 —— 改一处两边一起变 */
 .note .s-red { color: var(--red); }
-.note .s-black { color: var(--ink); }
+.note .s-black { color: var(--ink-txt); }
 .note .s-teal { color: var(--teal); }
 .note .s-blue { color: var(--blue); }
