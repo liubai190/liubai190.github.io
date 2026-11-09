@@ -11,11 +11,14 @@
   --card: rgba(28, 17, 8, .42);
   --hair: rgba(224, 179, 84, .30);
   /* 四方标识色：与棋子墨色同色相，但提亮 —— 面板是深木底（亮度 ~45），
-     直接搬棋子墨（青 #008080 亮度 90 / 蓝 #1b5370 亮度 70）会看不见。
-     军名与色名一致：红 / 蓝 / 黑 / 青（2026-10-09 起，界面文字同此）。 */
+     直接搬棋子墨（亮度都在 30 上下）会看不见。
+     军名与色名一致：红 / 黑 + 两家自选色名（2026-10-09 起的口径，界面文字同此）。 */
   --red: #d6503f;        /* 红方（你）：棋子墨是红 */
-  --teal: #35b2ac;       /* 青军：棋子墨是水鸭色 #008080 */
-  --blue: #4e9fd1;       /* 蓝方：棋子墨是蓝 #1b5370 */
+  /* 左家 / 右家两家的标识色 —— 2026-11-09 起可自选，由 applyScheme() 按当前配色
+     写到这两个变量上（值取 C4Tint.PALETTE 的 ui 提亮版，对深木底 4.78:1）。
+     下面的默认值 = 出厂配色「青 · 紫红」；原来的 --teal / --blue 已被这两个取代。 */
+  --side-l: #45949a;
+  --side-r: #b5749d;
   --ink: #000000;        /* 黑方【色块】：纯黑，与棋子墨一致（只给 .pick 的色点用） */
   /* 黑方【文字】必须用白：「提亮」对红/青/蓝是提亮，对黑只能翻成白 ——
      深木底（亮度 ~45）上纯黑的对比度约 1.1:1，等于看不见
@@ -169,12 +172,13 @@ body::before {
   background: rgba(28, 17, 8, .30);
   transition: color .15s, border-color .15s, background .15s;
 }
-/* 四家标识色与棋子一致：s0 红、s1 黑、s2 青、s3 蓝（编号 = core.js 的内部常量）
-   s1 的文字色走 --ink-txt（白），--ink（纯黑）只用于色块 */
+/* 四家标识色与棋子一致：s0 红、s1 黑、s2 左家、s3 右家（编号 = core.js 的内部常量）
+   s1 的文字色走 --ink-txt（白），--ink（纯黑）只用于色块；
+   s2 / s3 跟着当前配色走（--side-l / --side-r，默认「青 · 紫红」） */
 .sides .s0 { color: var(--red); }
 .sides .s1 { color: var(--ink-txt); }
-.sides .s2 { color: var(--teal); }
-.sides .s3 { color: var(--blue); }
+.sides .s2 { color: var(--side-l); }
+.sides .s3 { color: var(--side-r); }
 .sides .side.now {
   border-color: rgba(224, 179, 84, .70);
   background: rgba(70, 44, 14, .60);
@@ -229,8 +233,10 @@ body::before {
 .pick .dot { width: 10px; height: 10px; border-radius: 2px; flex: 0 0 auto; }
 .pick .dot.d0 { background: var(--red); }
 .pick .dot.d1 { background: var(--ink); box-shadow: 0 0 0 1px rgba(243, 231, 211, .60); }
-.pick .dot.d2 { background: var(--teal); }
-.pick .dot.d3 { background: var(--blue); }
+.pick .dot.d2 { background: var(--side-l); }
+.pick .dot.d3 { background: var(--side-r); }
+/* 色名（由 JS 按当前配色填），别继承斜体 */
+.pick .pn { font-style: normal; }
 
 .seg { display: flex; border: 1px solid var(--hair); border-radius: 4px; overflow: hidden; }
 .seg button {
@@ -304,8 +310,109 @@ body::before {
 /* 规则段里的四方字，色值与状态条同源 —— 改一处两边一起变 */
 .note .s-red { color: var(--red); }
 .note .s-black { color: var(--ink-txt); }
-.note .s-teal { color: var(--teal); }
-.note .s-blue { color: var(--blue); }
+.note .s-l { color: var(--side-l); }
+.note .s-r { color: var(--side-r); }
+
+/* ---------------- 配色（2026-11-09） ----------------
+   红、黑固定；左家、右家从六个算过的深色里挑，另有四组预设一键切。
+   色板每格下面是该色对自家圆盘的对比度（WCAG），划掉的是跟另一侧太近的。 */
+.scheme {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(224, 179, 84, .22);
+}
+.scheme-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  margin-bottom: 10px;
+}
+.scheme-head .label {
+  font-size: 12px;
+  color: var(--mute);
+  letter-spacing: .14em;
+}
+.scheme-hint { font-size: 12px; color: #9b8468; }
+
+/* 四组预设：一张卡里两枚色块 + 名字 + 左右色差 */
+.presets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.preset {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 11px 5px 8px;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--cream2);
+  background: rgba(28, 17, 8, .38);
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.preset:hover { color: var(--cream); border-color: rgba(224, 179, 84, .55); }
+.preset.on {
+  border-color: rgba(224, 179, 84, .75);
+  background: rgba(70, 44, 14, .55);
+  color: var(--cream);
+}
+.preset .sw { display: flex; gap: 2px; }
+.preset .sw i {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(243, 231, 211, .30);
+}
+.preset .nm { letter-spacing: .02em; }
+.preset .de { font-size: 11px; color: var(--mute); }
+
+.palrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.pal-tag {
+  flex: 0 0 68px;
+  font-size: 12px;
+  color: var(--mute);
+  white-space: nowrap;
+}
+.pal-tag b { color: var(--cream2); font-weight: 600; }
+.palgrid { display: flex; flex-wrap: wrap; gap: 6px; }
+.cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px 4px 6px;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--cream2);
+  background: rgba(28, 17, 8, .34);
+  border: 1px solid rgba(224, 179, 84, .20);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.cell:hover:not(:disabled) { color: var(--cream); border-color: rgba(224, 179, 84, .55); }
+.cell.on { border-color: rgba(224, 179, 84, .80); background: rgba(70, 44, 14, .58); color: var(--cream); }
+.cell .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(243, 231, 211, .28);
+  flex: 0 0 auto;
+}
+.cell .n { letter-spacing: .02em; }
+.cell .cr { font-size: 11px; color: #b9a68c; }
+/* 划掉：跟另一侧 ΔE 太近，另一边的同名色选不了。
+   压到 .34 时在深木底上几乎看不见，提到 .46 —— 看得出「这儿有一格但选不了」 */
+.cell.off, .cell:disabled {
+  opacity: .46;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
 
 /* ================= 移动端（2026-11-09） =================
    这页原来没有 <meta viewport>，手机按 980 的布局视口排版再整页缩到屏宽：
@@ -341,6 +448,13 @@ body::before {
   .meta { font-size: 13px; }
 
   .note { font-size: 13px; line-height: 1.8; }
+
+  /* 配色块：触控目标放到 40px，色板一行放不下就换行 */
+  .scheme { margin-top: 16px; padding-top: 12px; }
+  .scheme-hint { font-size: 12px; }
+  .preset { font-size: 13px; padding: 8px 12px 8px 9px; min-height: 40px; }
+  .cell { font-size: 13px; padding: 7px 10px 7px 7px; min-height: 40px; }
+  .pal-tag { flex-basis: 62px; }
 }
 
 /* 小屏再收一档（iPhone SE 那档 320） */
@@ -352,6 +466,9 @@ body::before {
   .seg.narrow button { padding: 9px 6px; min-width: 40px; }
   .btns button { padding: 9px 14px; font-size: 13.5px; }
   .note { font-size: 12.5px; }
+  /* 320 宽塞不下「左家 + 六格」，标签单起一行 */
+  .palrow { flex-wrap: wrap; gap: 6px 0; }
+  .pal-tag { flex-basis: 100%; }
 }
 
 /* 触屏设备（宽度超过 640 的 iPad、手机横屏也走这里）：
@@ -363,8 +480,17 @@ body::before {
   .sides { font-size: 13px; }
   .seg button, .btns button { min-height: 42px; }
   .pick, .toggle { min-height: 34px; }
+  .preset, .cell { min-height: 42px; }
   /* 触屏没有真正的 hover，点完会「粘住」变色 —— 换成按下才给反馈 */
   .seg button:hover, .btns button:hover { background: rgba(28, 17, 8, .38); color: var(--cream2); }
   .seg button.on:hover { background: linear-gradient(#f0c463, #c8921f); color: #3a2408; }
   .seg button:active, .btns button:active { background: rgba(60, 38, 16, .55); }
+  .preset:hover, .cell:hover:not(:disabled) {
+    background: rgba(28, 17, 8, .38);
+    border-color: rgba(224, 179, 84, .20);
+    color: var(--cream2);
+  }
+  .preset.on:hover { background: rgba(70, 44, 14, .55); color: var(--cream); }
+  .cell.on:hover { background: rgba(70, 44, 14, .58); color: var(--cream); }
+  .preset:active, .cell:active:not(:disabled) { background: rgba(60, 38, 16, .55); }
 }

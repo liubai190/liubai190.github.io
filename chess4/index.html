@@ -32,10 +32,10 @@
         <div class="field">
           <div class="label">电脑方</div>
           <div class="picks" id="aiPick">
-            <label class="pick"><input type="checkbox" data-side="0"><span class="dot d0"></span>红</label>
-            <label class="pick"><input type="checkbox" data-side="3" checked><span class="dot d3"></span>蓝</label>
-            <label class="pick"><input type="checkbox" data-side="1" checked><span class="dot d1"></span>黑</label>
-            <label class="pick"><input type="checkbox" data-side="2" checked><span class="dot d2"></span>青</label>
+            <label class="pick"><input type="checkbox" data-side="0"><span class="dot d0"></span><i class="pn">红</i></label>
+            <label class="pick"><input type="checkbox" data-side="3" checked><span class="dot d3"></span><i class="pn">蓝</i></label>
+            <label class="pick"><input type="checkbox" data-side="1" checked><span class="dot d1"></span><i class="pn">黑</i></label>
+            <label class="pick"><input type="checkbox" data-side="2" checked><span class="dot d2"></span><i class="pn">青</i></label>
           </div>
         </div>
 
@@ -81,10 +81,27 @@
         </div>
       </div>
 
+      <div class="scheme">
+        <div class="scheme-head">
+          <span class="label">配色</span>
+          <span class="scheme-hint">红、黑固定；左家、右家可自选。色块后的小字 = 字墨对自家圆盘的对比度，划掉 = 与另一侧太近</span>
+        </div>
+        <div class="presets" id="schemePresets"></div>
+        <div class="palrow">
+          <span class="pal-tag">左家 <b id="curL">青</b></span>
+          <div class="palgrid" id="palL"></div>
+        </div>
+        <div class="palrow">
+          <span class="pal-tag">右家 <b id="curR">紫红</b></span>
+          <div class="palgrid" id="palR"></div>
+        </div>
+      </div>
+
       <p class="note">
-        <strong>规则</strong>：与中国象棋同。红方在下、青方在左、黑方在上、蓝方在右，
-        按 <span class="s-red">红</span> → <span class="s-blue">蓝</span> →
-        <span class="s-black">黑</span> → <span class="s-teal">青</span> 逆时针轮流走子。
+        <strong>规则</strong>：与中国象棋同。红方在下、黑方在上，另两家分居左右两侧
+        （具体颜色见上方状态条，可在「配色」里换），
+        按 <span class="s-red">红</span> → <span class="s-r" data-side="3">右家</span> →
+        <span class="s-black">黑</span> → <span class="s-l" data-side="2">左家</span> 逆时针轮流走子。
         另加一条：<strong>除将帅之外，没走动过的棋子都不能被吃</strong>——被别人吃过、或者自己走出去又退回来，
         都算「走动过」。被将死（或困毙）的一方出局，残子从盘上撤掉，最后存活的一家获胜。
         勾上「走法提示」可以看到选中棋子的可走点；被上面那条规则挡下的目标会画成虚线圈加斜杠。
@@ -118,6 +135,7 @@
 <audio id="snd-lose"    src="audio/lose.wav"    preload="auto"></audio>
 
 <script src="js/chess4-core.js"></script>
+<script src="js/chess4-tint.js"></script>
 <script src="js/chess4-ui.js"></script>
 </body>
 </html>

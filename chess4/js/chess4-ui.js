@@ -34,7 +34,17 @@
 
   var TYPES = ['j', 's', 'x', 'c', 'm', 'p', 'z'];
   var PREFIX = ['r_', 'b_', 'g_', 'y_'];     // 红 黑 青(g_) 蓝(y_)  —— 内部名沿用素材前缀
-  var SIDE_TXT = ['红', '黑', '青', '蓝'];    // 屏幕上显示的军名，按颜色叫
+  /*
+   * 屏幕上显示的军名。红、黑两家固定；左家（内部编号 2）、右家（3）跟着配色走，
+   * 由 applyScheme() 改成当前选中的色名（2026-11-09 起可自选）。
+   * 名字必须与棋子墨色一致 —— 这是 10-09 定下的口径（「名字喊什么颜色、字就得是什么颜色」）。
+   */
+  var SIDE_TXT = ['红', '黑', '青', '蓝'];
+
+  // 当前配色：色名取自 C4Tint.PALETTE，默认「青 · 紫红」
+  var TINT = window.C4Tint || null;
+  var scheme = { left: '青', right: '紫红' };
+  var SCHEME_KEY = 'c4.scheme.v1';
 
   // 三档难度：搜索深度 + 随机宽容度 + 时间上限
   // 四方是「一打三」的偏执搜索，分支 = 50^4 量级，深度 4 已经是秒级，不能再往上堆。
@@ -194,9 +204,27 @@
   function py(r) { return GY0 + r * SPACE; }
 
   // ------------------------------------------------------------ 绘制
+  /** 某一家棋子该用的字墨：红黑写死在素材里，左右两家取当前配色 */
+  function sideColor(side) {
+    if (side === 2) return TINT ? TINT.palette(scheme.left).ink : '#00656b';
+    if (side === 3) return TINT ? TINT.palette(scheme.right).ink : '#6b2455';
+    return null;
+  }
+
+  /**
+   * 画一枚棋子。左家(2)、右家(3) 走运行时着色（底图 b_ / r_ 两套，字墨当参数传），
+   * 红、黑两家直接用原图 —— 这两家的墨色是棋种约定，不参与调色。
+   * 模型还没建好时退回原图，免得开局闪一下空白。
+   */
   function drawPiece(p, cx, cy, alpha) {
-    var im = imgs[pieceName(p)];
-    if (!im || !im.complete || !im.naturalWidth) return;
+    var side = (p >> 3) & 3, im = null;
+    if (TINT && (side === 2 || side === 3)) {
+      var arr = TINT.sheets(side, sideColor(side));
+      if (arr) im = arr[(p & 7) - 1];
+    }
+    if (!im) im = imgs[pieceName(p)];
+    if (!im) return;
+    if (im.tagName === 'IMG' && (!im.complete || !im.naturalWidth)) return;
     var a = (alpha == null) ? 1 : alpha;
     if (a < 1) ctx.globalAlpha = a;
     ctx.drawImage(im, cx - PIECE / 2, cy - PIECE / 2, PIECE, PIECE);
@@ -339,6 +367,151 @@
       html += '<span class="' + cl + '">' + SIDE_TXT[i] + tag + '</span>';
     }
     elSides.innerHTML = html;
+  }
+
+  // ------------------------------------------------------------ 配色（2026-11-09）
+  /*
+   * 红、黑两家固定不动（棋种约定）；左家(2)、右家(3) 可在六个算过的深色里挑，
+   * 也能一键切四组预设。默认「青 · 紫红」。
+   *
+   * 三条设计口径：
+   *   ① 色名即军名 —— 状态条、电脑方勾选框、规则说明里的走子顺序全部跟着变；
+   *   ② 另一侧跟它 ΔE 小于 28 的色直接划掉点不动（现状那对青/蓝是 28.9，
+   *      用户说"区分度不是很大"，28 就是照着这个程度定的）；
+   *   ③ 只换字墨，圆盘与外环是烘死的素材，一个像素不改。
+   */
+  function schemeOk(nm) {
+    if (!TINT) return false;
+    for (var i = 0; i < TINT.PALETTE.length; i++) if (TINT.PALETTE[i].name === nm) return true;
+    return false;
+  }
+
+  function loadScheme() {
+    try {
+      var s = JSON.parse(window.localStorage.getItem(SCHEME_KEY) || 'null');
+      if (s && schemeOk(s.left) && schemeOk(s.right)) {
+        scheme.left = s.left;
+        scheme.right = s.right;
+      }
+    } catch (e) { /* 隐私模式 / 存储被禁：用默认配色，不影响游戏 */ }
+  }
+
+  function saveScheme() {
+    try {
+      window.localStorage.setItem(SCHEME_KEY, JSON.stringify(scheme));
+    } catch (e) { }
+  }
+
+  /** 把配色落到界面上：军名、四家标识色、勾选框色名、规则说明顺序，然后重画 */
+  function applyScheme() {
+    if (!TINT) return;
+    var pl = TINT.palette(scheme.left), pr = TINT.palette(scheme.right);
+    SIDE_TXT[2] = pl.name;
+    SIDE_TXT[3] = pr.name;
+
+    var root = document.documentElement.style;
+    root.setProperty('--side-l', pl.ui);
+    root.setProperty('--side-r', pr.ui);
+
+    var i, tags = document.querySelectorAll('#aiPick .pn');
+    for (i = 0; i < tags.length; i++) {
+      var inp = tags[i].parentNode.querySelector('input');
+      if (inp) tags[i].textContent = SIDE_TXT[+inp.getAttribute('data-side')];
+    }
+    var ords = document.querySelectorAll('.note [data-side]');
+    for (i = 0; i < ords.length; i++) {
+      ords[i].textContent = SIDE_TXT[+ords[i].getAttribute('data-side')];
+    }
+
+    var cl = $('curL'), cr = $('curR');
+    if (cl) cl.textContent = pl.name;
+    if (cr) cr.textContent = pr.name;
+
+    renderPresets();
+    renderPalette(2);
+    renderPalette(3);
+    saveScheme();
+    if (st) { setStatus(); draw(); }
+  }
+
+  /**
+   * 只在 URL 带 ?probe=1 时跑：把着色结果落到 body[data-probe]，
+   * 给无头浏览器 dump-dom 核对用（正常访问完全不执行）。
+   */
+  function probeScheme() {
+    var out = { ready: TINT.isReady(), err: TINT.error(), left: scheme.left, right: scheme.right, px: {} };
+    [2, 3].forEach(function (side) {
+      var tag = side === 2 ? 'L' : 'R';
+      var arr = TINT.sheets(side, sideColor(side));
+      if (!arr) { out.px[tag] = null; return; }
+      var d = arr[0].getContext('2d').getImageData(0, 0, 116, 116).data;
+      var best = null, bl = 1e9, i, o;
+      for (i = 0; i < 116 * 116; i++) {
+        o = i * 4;
+        if (d[o + 3] < 200) continue;
+        var x = i % 116, y = (i / 116) | 0;
+        if (x < 38 || x > 78 || y < 28 || y > 88) continue;   // 只在中部找，避开外环
+        var L = 0.299 * d[o] + 0.587 * d[o + 1] + 0.114 * d[o + 2];
+        if (L < bl) { bl = L; best = [d[o], d[o + 1], d[o + 2]]; }
+      }
+      out.px[tag] = best
+        ? '#' + best.map(function (v) { return ('0' + v.toString(16)).slice(-2); }).join('')
+        : null;
+    });
+    document.body.setAttribute('data-probe', JSON.stringify(out));
+  }
+
+  function renderPresets() {
+    var box = $('schemePresets');
+    if (!box || !TINT) return;
+    box.innerHTML = '';
+    TINT.PRESETS.forEach(function (p) {
+      var li = TINT.palette(p.left), ri = TINT.palette(p.right);
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'preset' + (p.left === scheme.left && p.right === scheme.right ? ' on' : '');
+      b.title = p.name;
+      b.innerHTML = '<span class="sw">' +
+        '<i style="background:' + li.ink + '"></i>' +
+        '<i style="background:' + ri.ink + '"></i></span>' +
+        '<span class="nm">' + p.name + '</span>' +
+        '<span class="de">ΔE ' + Math.round(TINT.deltaE(li.ink, ri.ink)) + '</span>';
+      b.addEventListener('click', function () {
+        scheme.left = p.left;
+        scheme.right = p.right;
+        applyScheme();
+      });
+      box.appendChild(b);
+    });
+  }
+
+  function renderPalette(side) {
+    var box = $(side === 2 ? 'palL' : 'palR');
+    if (!box || !TINT) return;
+    var mine = side === 2 ? scheme.left : scheme.right;
+    var other = side === 2 ? scheme.right : scheme.left;
+    var otherInk = TINT.palette(other).ink;
+    var plate = TINT.plate(side);
+    box.innerHTML = '';
+    TINT.PALETTE.forEach(function (p) {
+      var de = TINT.deltaE(p.ink, otherInk);
+      var bad = de < TINT.MIN_DE;
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cell' + (p.name === mine ? ' on' : '') + (bad ? ' off' : '');
+      b.disabled = bad;
+      b.title = bad
+        ? ('和另一侧的「' + other + '」太近：ΔE ' + Math.round(de) + '，至少要 ' + TINT.MIN_DE)
+        : (p.name + ' · 与另一侧 ΔE ' + Math.round(de));
+      b.innerHTML = '<span class="dot" style="background:' + p.ink + '"></span>' +
+        '<span class="n">' + p.name + '</span>' +
+        '<span class="cr">' + TINT.contrast(p.ink, plate).toFixed(2) + '</span>';
+      b.addEventListener('click', function () {
+        if (side === 2) scheme.left = p.name; else scheme.right = p.name;
+        applyScheme();
+      });
+      box.appendChild(b);
+    });
   }
 
   // ------------------------------------------------------------ 音效
@@ -690,6 +863,7 @@
 
     initSound();
     initDots();
+    loadScheme();
 
     st = newState();
     setLevel(st.level);
@@ -710,8 +884,17 @@
     });
 
     loadImages(function () {
-      draw();
-      if (window.console) console.log('[四界大战] 素材加载完成');
+      if (TINT) {
+        // 建好两套字形模型再上色：首帧用原图兜底，不会闪一下空白
+        TINT.build(imgs, function () {
+          applyScheme();
+          if (/[?&]probe=1/.test(location.search)) probeScheme();
+          if (window.console) console.log('[四界大战] 素材与棋子模型加载完成');
+        });
+      } else {
+        draw();
+        if (window.console) console.log('[四界大战] 素材加载完成（着色模块缺位，用原图）');
+      }
     });
   }
 
@@ -746,6 +929,14 @@
     setLevel: function (v) { setLevel(v); return st.level; },
     // 电脑参与方：setAI(方, true/false)；四方全勾会被挡下并返回 false
     setAI: setAI,
+    // 配色：setScheme('青','紫红')；名字不在色板里就忽略该侧
+    setScheme: function (left, right) {
+      if (left && schemeOk(left)) scheme.left = left;
+      if (right && schemeOk(right)) scheme.right = right;
+      applyScheme();
+      return { left: scheme.left, right: scheme.right };
+    },
+    getScheme: function () { return { left: scheme.left, right: scheme.right }; },
     aiFlags: function () { return aiFlags.slice(); },
     humanCount: humanCount,
     aiCount: aiCount,
