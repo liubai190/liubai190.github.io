@@ -237,8 +237,11 @@
       for (sx = -1; sx <= 1; sx += 2) for (sy = -1; sy <= 1; sy += 2) {
         if (col === 0 && sx < 0) continue;      // 贴边的省掉朝外那一侧
         if (col === 8 && sx > 0) continue;
-        line(ctx, cx + sx * 9, cy + sy * 16, cx + sx * 16, cy + sy * 16);
-        line(ctx, cx + sx * 16, cy + sy * 9, cx + sx * 16, cy + sy * 16);
+        // 拐角**贴着交点**（从 6 起），两条臂背离交点伸到 15.5。
+        // 2026-11-10 用户指出原来画反了（拐角在外、开口朝里，像四个小括号朝中心张开）。
+        // 照 board.png 量的：拐角距交点心 6、臂端 15.5（原图像素 12 / 31，按 2 倍折算）。
+        line(ctx, cx + sx * 6, cy + sy * 6, cx + sx * 15.5, cy + sy * 6);
+        line(ctx, cx + sx * 6, cy + sy * 6, cx + sx * 6, cy + sy * 15.5);
       }
     }
     // 外框
