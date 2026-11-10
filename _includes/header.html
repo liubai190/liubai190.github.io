@@ -14,6 +14,20 @@
           <line x1="15.4" y1="15.4" x2="21" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
       </button>
+
+      {%- comment -%}
+        首页骰子放在放大镜和三条线中间。DOM 必须真在这里 ——
+        只在 CSS 里把它绝对定位到页头位置的话，页头一滚动就对不上。
+        桌面端靠 CSS 改回 fixed（右下角悬浮），手机端才是页头里的一个图标位。
+      {%- endcomment -%}
+      {%- if page.dice -%}
+      <div class="dice-wrap">
+        <button class="dice-btn" id="dice-btn" type="button" title="随便翻一篇" aria-label="随便翻一篇文章">
+          <span class="dice-face">🎲</span>
+        </button>
+      </div>
+      {%- endif -%}
+
       <!-- 三条线：label 点一下等于勾选下面的勾选框，纯 CSS 收起分类 -->
       <label class="icon-btn nav-toggle" for="nav-trigger" aria-label="展开分类">
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">

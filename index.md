@@ -1,6 +1,7 @@
 ---
 layout: default
 title: 灰木
+dice: true
 ---
 
 {%- comment -%}
@@ -18,12 +19,6 @@ title: 灰木
     </li>
     {%- endfor -%}
   </ul>
-
-  <div class="dice-wrap">
-    <button class="dice-btn" id="dice-btn" type="button" title="随便翻一篇" aria-label="随便翻一篇文章">
-      <span class="dice-face">🎲</span>
-    </button>
-  </div>
 </div>
 
 <script>

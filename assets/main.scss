@@ -960,7 +960,10 @@ details.post-fold {
 }
 
 /* ===== 首页骰子：随机翻一篇 ===== */
-/* 悬浮在 720px 正文栏右侧外面一点，纵向落在页脚上方。
+/* DOM 在 _includes/header.html 的 .header-tools 里（只在首页渲染，看 front matter 的 dice），
+   手机端就靠 flex 排在放大镜和三条线中间。
+   桌面端用 fixed 抽出来，悬浮在 720px 正文栏右侧外面一点、纵向落在页脚上方 ——
+   位置只由 right/bottom 决定，跟父元素无关，所以挪进页头不影响桌面观感。
    线上 body 是 min-height:100vh 的 flex 纵向布局、.page-content 带 flex:1，
    页脚永远贴在页面最底部，所以写死偏移量就能稳定躲开它 */
 
@@ -1030,17 +1033,45 @@ details.post-fold {
 }
 
 @media (max-width: 640px) {
+  /* 手机端：骰子不再悬浮，回到 .header-tools 里排队，夹在放大镜与三条线之间。
+     尺寸跟着两个图标走（24×24 方框、svg 也是 24），
+     间隔不单独设 —— 由 .header-tools 的 gap:8px 统一管，三个间距才等宽 */
   .dice-wrap {
-    right: 16px;
+    position: static;
+    right: auto;
+    bottom: auto;
+    z-index: auto;
+    display: flex;
   }
 
   .dice-btn {
-    width: 46px;
-    height: 46px;
+    position: relative;
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+
+    /* 24px 方框对指头太窄，往外借一圈透明热区。
+       左右只借 3px，和 .icon-btn 的 ::after 完全一致，免得跟隔壁抢点击 */
+    &::after {
+      content: "";
+      position: absolute;
+      top: -10px;
+      right: -3px;
+      bottom: -10px;
+      left: -3px;
+    }
+
+    /* 触屏上 hover 会「粘」住，别留那 3px 上浮 */
+    &:hover {
+      transform: none;
+    }
   }
 
+  /* 20px 是量出来的，不是按方框的 24 直接给：这个字号下骰子字形 20×22，
+     放大镜 19×19、三条线 20×12，三者视觉分量相当。
+     emoji 的 em 框自带留白，字号跟字形不是一回事，等比照搬会偏大 */
   .dice-face {
-    font-size: 30px;
+    font-size: 20px;
   }
 }
 
