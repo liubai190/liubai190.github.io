@@ -62,7 +62,9 @@
       anim: null,
       busy: false,
       over: false,
-      overText: ''
+      overText: '',
+      ban: null,        // 长将禁手：这几手不许走（只对当前该走的一方有意义）
+      note: ''          // 状态条的一次性提示（比如点了禁手招）
     };
   }
 
@@ -373,6 +375,7 @@
     var t, cls = '';
     if (st.over) { t = st.overText; cls = 'over'; }
     else if (st.busy) { t = '电脑思考中'; cls = 'busy'; }
+    else if (st.note) { t = st.note; }
     else if (mode === 'pvp') {
       t = '轮到' + sideName(st.turn);
       if (B.inCheck(st.board, st.turn)) t = sideName(st.turn) + '被将军';
@@ -384,6 +387,17 @@
     elStatus.className = 'status' + (cls ? ' ' + cls : '');
     elPlies.textContent = '第 ' + Math.ceil(st.hist.length / 2) + ' 手';
     elUndo.disabled = st.busy || st.hist.length === 0;
+  }
+
+  // 状态条上的一次性提示（点了长将禁手招时用），2.4 秒后自己恢复
+  var noteTimer = 0;
+  function flashNote() {
+    window.clearTimeout(noteTimer);
+    noteTimer = window.setTimeout(function () {
+      if (!st || st.over) return;
+      st.note = '';
+      setStatus();
+    }, 2400);
   }
 
   // ------------------------------------------------------------ 音效
@@ -434,6 +448,7 @@
     var p = st.board[from], cap = st.board[to];
 
     st.sel = -1; st.ps = [];
+    st.ban = null; st.note = '';          // 长将禁手只管一手，走完就重算
     st.anim = {
       from: from, to: to, p: p,
       fc: from % 9, fr: (from / 9) | 0,
@@ -458,6 +473,43 @@
     return n >= 3;
   }
 
+  /**
+   * 长将禁手集
+   *
+   * 「长将」的判据：一方用同样的方式反复将军，把某个局面拖到第三次重复。
+   * 到那一步不能一判和了事 —— 按规矩该长将的一方换招，所以这里挑出
+   * 「走完会让某个局面第三次出现、并且还是将军」的着法，禁掉。
+   *
+   * 为什么是「第三次」而不是「第四次」：等到第四次，判和已经在第三次时抢先触发了，
+   * 这盘就废了。卡在第三次这档，正好是「这一轮将完，下一轮不许再用」。
+   *
+   * 返回 null 表示没有可禁的；返回的数组可能等于全部合法着法 ——
+   * 那种情况说明这一方除了长将已经无路可走，由调用方去判和。
+   */
+  function longCheckBan(side, all) {
+    // 粗筛：没有任何局面到过第二次，就不可能被推成第三次，直接返回空
+    var tall = {}, i, j, k, hit = false;
+    for (i = 0; i < st.posList.length; i++) {
+      k = st.posList[i];
+      tall[k] = (tall[k] || 0) + 1;
+      if (tall[k] >= 2) hit = true;
+    }
+    if (!hit) return null;
+
+    all = all || B.legalMoves(st.board, side);
+    var ban = [], mv, cap, key, chk;
+    for (i = 0; i < all.length; i++) {
+      mv = all[i];
+      cap = B.makeMove(st.board, mv);
+      chk = B.inCheck(st.board, 1 - side);
+      key = B.posKey(st.board);
+      B.unmakeMove(st.board, mv, cap);
+      if (!chk) continue;                     // 不是将军的不算长将
+      if ((tall[key] || 0) >= 2) ban.push(mv);   // 这一手会把它推成第三次
+    }
+    return ban.length ? ban : null;
+  }
+
   function afterMove() {
     var side = st.turn;                     // 轮到谁走
     if (!B.hasLegalMove(st.board, side)) {
@@ -473,12 +525,32 @@
       draw();
       return;
     }
+    st.ban = null;
+    st.note = '';
+    // 先算长将禁手，再决定要不要判和 —— 判和得给禁手让路
+    var all = B.legalMoves(st.board, side);
+    var ban = longCheckBan(side, all);
+    var inChk = B.inCheck(st.board, side);
     if (repetition()) {
-      st.over = true; st.overText = '和棋（同一局面出现三次）';
-      setStatus(); draw();
-      return;
+      // 既没有可禁的长将招、又没在被将军中，才是真和棋。
+      // 正在被将的那一方先别判和：这一手是被长将逼出来的，等它躲完，
+      // 轮到长将的一方时再算禁手，逼它换招。
+      if (!ban && !inChk) {
+        st.over = true; st.overText = '和棋（同一局面出现三次）';
+        setStatus(); draw();
+        return;
+      }
+      st.note = '长将到此为止，换一种走法';
     }
-    if (B.inCheck(st.board, side)) play('check');
+    if (ban) {
+      if (ban.length >= all.length) {          // 除了长将无路可走 —— 只能判和
+        st.over = true; st.overText = '和棋（长将循环，已无其他着法）';
+        setStatus(); draw();
+        return;
+      }
+      st.ban = ban;
+    }
+    if (inChk) play('check');
     setStatus(); draw();
     if (mode === 'pve' && st.turn === B.BLACK) scheduleAI();
   }
@@ -491,7 +563,8 @@
       try {
         res = B.think(st.board, B.BLACK, {
           depth: lv.depth, slack: lv.slack, budget: lv.budget,
-          seen: new Set(st.posList)
+          seen: new Set(st.posList),
+          avoid: st.ban ? new Set(st.ban) : null   // 长将禁手：这几手不搜
         });
       } catch (e) { console.error(e); }
       st.busy = false;
@@ -534,7 +607,14 @@
       return;
     }
     if (st.sel >= 0 && st.ps.indexOf(sq) >= 0) {
-      applyMove(st.sel * 128 + sq);
+      var mv = st.sel * 128 + sq;
+      if (st.ban && st.ban.indexOf(mv) >= 0) {     // 长将禁手：这一手不许走
+        st.note = '这一手还是长将，换一种走法';
+        setStatus();
+        flashNote();
+        return;
+      }
+      applyMove(mv);
       return;
     }
     if (st.sel >= 0) select(-1);
@@ -551,6 +631,7 @@
     if (st.busy || st.anim || !st.hist.length) return;
     INK.dirtyAll();          // 悔棋会一次改回好几个格子
     st.over = false; st.overText = '';
+    st.ban = null; st.note = '';          // 悔棋后局面变了，禁手与提示都不再成立
 
     if (mode === 'pvp') {
       // 双人：退一手，轮到上一个人重走

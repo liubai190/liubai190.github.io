@@ -447,6 +447,15 @@
     var legal = legalMoves(bd, s);
     if (!legal.length) return { move: null, value: 0, depth: 0, nodes: 0, ms: 0 };
 
+    // 长将禁手：调用方点名「这几手不许走」（UI 会把会造成同一局面第四次重复的将军招塞进来）。
+    // 只在根上剪，不参与搜索排序 —— 换一招重新搜，评估仍是干净的一盘棋。
+    // 全被禁时保持原样：那时说明这方真的没有别的选择，交给 UI 判和。
+    if (opts.avoid && opts.avoid.size) {
+      var alt = [], ai;
+      for (ai = 0; ai < legal.length; ai++) if (!opts.avoid.has(legal[ai])) alt.push(legal[ai]);
+      if (alt.length) legal = alt;
+    }
+
     var result = null, prevBest = -1;
     for (var d = 1; d <= maxDepth; d++) {
       if (prevBest >= 0) {                       // 上一轮最佳提前
