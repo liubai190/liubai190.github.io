@@ -539,12 +539,13 @@ body.search-open {
     color: #282728;
     font-size: 17px;
     text-decoration: none;
-    transition: color 0.2s ease;
 
-    &:hover {
-      color: #9a9a9a;
-      text-decoration: none;
-    }
+    /* 【别给列表标题加 :hover 变色的反馈】
+       原来这里写着 &:hover { color: #9a9a9a }，本意是「指到标题变浅=可点」。
+       但配上「聚焦淡出」就打架了：鼠标停在**文字上**时，本行标题变浅灰，
+       而鼠标停在行的空白处时，本行标题仍是深色 —— 同一行两种样子。
+       更要命的是变浅之后，它跟旁边被压到 0.38 的行几乎一样淡，
+       看着像「连我指的这行也淡出去了」。效果本身要求被指的行什么都不变，所以去掉。 */
   }
 
   .home-post-date {
@@ -614,10 +615,11 @@ body.search-open {
              分类页标题会比首页大一号（实测 24px vs 17px）。 */
           font-size: inherit;
           text-decoration: none;
-          transition: color 0.2s ease;
-
+          /* 同首页：`.post-link:hover` 会被 minima 染成浅色，
+             font-size 压住了、颜色也得压住，否则鼠标一碰标题就变灰，
+             和「聚焦淡出」里被淡掉的行一个样。 */
           &:hover {
-            color: #9a9a9a;
+            color: #282728;
             text-decoration: none;
           }
         }
@@ -636,6 +638,37 @@ body.search-open {
       text-decoration: none;
     }
   }
+}
+
+/* ===== 列表聚焦：鼠标停在哪一行，其余行淡出 ===== */
+/* 手感来自 wangyurui.com 的归档页：被指的那一行**本身什么都不变**，
+   只把别的行压到 .38，160ms 过渡。用 :has() 把「有行被悬停」变成
+   容器自己的状态，纯 CSS，不用 JS。
+   首页与分类页写在同一段 —— 两页列表长得一样，效果也必须一样。 */
+
+.home-post-list li,
+.category-page .post-list li {
+  transition: opacity 160ms ease;
+}
+
+/* ⚠️ 不要包 @media (hover: hover) and (pointer: fine)。
+   最早就是这么写的，结果在自己这边的预览面板里两条媒体特性都不成立，
+   整段规则被跳过 —— 看起来像「完全没有淡出」，白查半天。
+   面板 / WebView / 各种内嵌浏览器对这些特性的回答不一定和桌面 Chrome 一致。
+   代价是手机点一下会把 hover 短暂「粘住」（点别处即恢复），能接受。 */
+.home-post-list:has(li:hover) li:not(:hover),
+.category-page .post-list:has(li:hover) li:not(:hover) {
+  opacity: .38;
+}
+
+/* 键盘 Tab 也吃这一套：焦点所在行保持原样，其余淡出。
+   只认 :focus-visible —— 用 :focus-within 会被**鼠标点击**触发，
+   点完焦点留在链接上，淡出就卡住不散；而卡住的样子又跟「鼠标停在那行」
+   一模一样，再移上去看什么都没变化，等于把效果弄成了假死。
+   前面加 :not(:has(li:hover)) 是因为鼠标和键盘可能同时有状态。 */
+.home-post-list:not(:has(li:hover)):has(li a:focus-visible) li:not(:has(a:focus-visible)),
+.category-page .post-list:not(:has(li:hover)):has(li a:focus-visible) li:not(:has(a:focus-visible)) {
+  opacity: .38;
 }
 
 /* ===== 标题颜文字悬停效果 ===== */
