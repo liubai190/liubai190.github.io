@@ -525,14 +525,30 @@ body.search-open {
   list-style: none;
   padding-left: 0;
   margin-left: 0;
-  margin-bottom: 0;
+  /* 原来这里是 0，靠每个 li 的 margin-bottom: 2em 撑末行下方的空白（折叠后等于
+     ul 自己的外间距）。行距改由 padding 负责之后（见下面 li 的注释），把这 2em
+     挪到 ul 上，底部空间与改前逐像素等价。 */
+  margin-bottom: 2em;
 
   li {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
     gap: 16px;
-    margin-bottom: 2em;
+    /* 【行间留白必须用 padding，不能用 margin】
+       原来是 margin-bottom: 2em。margin 在 li 盒子**外面**，那段空隙属于 ul 自己，
+       鼠标停在两行中间时谁都不命中 —— 「有行被悬停」不成立，整列表瞬间恢复不淡出，
+       从一行移到下一行会闪一下。原版归档页没这个问题，正因为它行是紧挨着的。
+       改成上下各 1em 的 padding：盒子首尾相连，缝里的每一像素都归最近的那一行，
+       视觉间距仍是 1em + 1em = 2em，一个像素都没挪。 */
+    margin-bottom: 0;
+    padding-top: 1em;
+    padding-bottom: 1em;
+
+    /* 首行上沿、末行下沿不留白：首行本来就没有上方间距，
+       末行的空白交给 ul 的 margin-bottom（同上），盒子不要越界。 */
+    &:first-child { padding-top: 0; }
+    &:last-child { padding-bottom: 0; }
   }
 
   .home-post-link {
@@ -584,14 +600,23 @@ body.search-open {
   .post-list {
     list-style: none;
     padding-left: 0;
-    margin-bottom: 0;
+    /* 同首页：末行下方那 2em 从 li 的 margin 折叠过来，写成 ul 自己的更直白 */
+    margin-bottom: 2em;
 
     li {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
       gap: 16px;
-      margin-bottom: 2em;
+      /* 同首页：行间 2em 由 margin 改成上下各 1em 的 padding，
+         让两行的命中盒子首尾相连 —— margin 留在外面的话，鼠标落在缝里
+         谁都不算被悬停，淡出会闪掉。详见 .home-post-list li 上的注释。 */
+      margin-bottom: 0;
+      padding-top: 1em;
+      padding-bottom: 1em;
+
+      &:first-child { padding-top: 0; }
+      &:last-child { padding-bottom: 0; }
 
       .post-meta {
         color: #444;
